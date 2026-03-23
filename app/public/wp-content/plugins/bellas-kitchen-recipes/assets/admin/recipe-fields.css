@@ -1,0 +1,136 @@
+/* Bella's Kitchen — Recipe Admin Meta Box Styles */
+
+.bkr-table {
+	width: 100%;
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+
+.bkr-table th {
+	vertical-align: top;
+	padding: 10px 12px 10px 0;
+	width: 150px;
+	font-weight: 600;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.bkr-table td {
+	padding: 8px 0;
+	vertical-align: top;
+}
+
+.bkr-side-table th,
+.bkr-side-table td {
+	display: block;
+	width: 100%;
+	padding: 4px 0;
+}
+
+/* ── Image Fields ──────────────────────────────────────────────────────────── */
+
+.bkr-image-preview img {
+	display: block;
+	max-width: 150px;
+	max-height: 150px;
+	margin-bottom: 8px;
+	border-radius: 4px;
+	border: 1px solid #ddd;
+}
+
+.bkr-gallery-preview {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.bkr-gallery-item {
+	position: relative;
+	width: 80px;
+	height: 80px;
+	flex-shrink: 0;
+}
+
+.bkr-gallery-item img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	border-radius: 4px;
+	border: 1px solid #ddd;
+}
+
+.bkr-remove-gallery-image {
+	position: absolute;
+	top: -6px;
+	right: -6px;
+	width: 20px !important;
+	height: 20px !important;
+	min-height: unset !important;
+	border-radius: 50% !important;
+	padding: 0 !important;
+	line-height: 1 !important;
+	font-size: 11px !important;
+	background: #d63638 !important;
+	color: #fff !important;
+	border-color: #d63638 !important;
+	cursor: pointer;
+}
+
+/* ── Repeater Rows ─────────────────────────────────────────────────────────── */
+
+.bkr-repeater-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.bkr-ingredient-row .bkr-qty-input {
+	width: 70px;
+	flex-shrink: 0;
+}
+
+.bkr-ingredient-row select {
+	flex-shrink: 0;
+}
+
+.bkr-ingredient-row .bkr-item-input {
+	flex: 1;
+}
+
+.bkr-instruction-row {
+	align-items: flex-start;
+}
+
+.bkr-step-number {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	min-width: 28px;
+	background: #1d2327;
+	color: #fff;
+	border-radius: 50%;
+	font-size: 13px;
+	font-weight: 600;
+	flex-shrink: 0;
+	margin-top: 6px;
+}
+
+.bkr-instruction-row textarea {
+	flex: 1;
+	resize: vertical;
+}
+
+.bkr-remove-row {
+	flex-shrink: 0;
+	color: #d63638 !important;
+}
+
+.bkr-add-ingredient,
+.bkr-add-instruction {
+	margin-top: 4px !important;
+}

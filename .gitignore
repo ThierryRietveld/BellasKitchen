@@ -1,0 +1,35 @@
+# Ignore everything by default
+*
+!.gitignore
+!README.md
+
+# Don't ignore directories (so we can traverse into them)
+!*/
+
+# Ignore all of app except custom theme and plugins
+/app/*
+!app/public/
+/app/public/*
+!app/public/wp-content/
+/app/public/wp-content/*
+
+# Theme
+!app/public/wp-content/themes/
+/app/public/wp-content/themes/*
+!app/public/wp-content/themes/BellasKitchenTheme/
+!/app/public/wp-content/themes/BellasKitchenTheme/**
+
+# Custom plugins
+!app/public/wp-content/plugins/
+/app/public/wp-content/plugins/*
+!app/public/wp-content/plugins/bellas-kitchen-recipes/
+!/app/public/wp-content/plugins/bellas-kitchen-recipes/**
+
+# OS / misc
+.DS_Store
+node_modules/
+.env
+
+# WP Local
+/conf/
+/logs/
