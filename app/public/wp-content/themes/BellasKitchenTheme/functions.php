@@ -35,6 +35,27 @@ add_action( 'after_setup_theme', 'bellas_kitchen_theme_setup' );
  * Enqueue styles and scripts
  */
 function bellas_kitchen_theme_enqueue() {
+	wp_enqueue_style(
+		'bellas-kitchen-fonts',
+		'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap',
+		array(),
+		null
+	);
+
+	wp_enqueue_script(
+		'bellas-kitchen-tailwind',
+		'https://cdn.tailwindcss.com',
+		array(),
+		null,
+		false
+	);
+
+	wp_add_inline_script(
+		'bellas-kitchen-tailwind',
+		'tailwind.config = { theme: { extend: { colors: { ember: { 50: "#fff8f1", 100: "#ffedd5", 200: "#fed7aa", 300: "#fdba74", 500: "#f97316", 700: "#c2410c", 900: "#7c2d12" }, fig: { 100: "#f3e8ff", 300: "#d8b4fe", 700: "#7e22ce", 900: "#581c87" }, sage: { 100: "#e7f5ec", 300: "#9dd6af", 700: "#2f6a48" }, peach: { 100: "#ffe5d4", 200: "#ffd1ba", 300: "#ffbfa3" }, butter: { 100: "#fff4bf", 200: "#ffe78a", 300: "#ffd95c" }, mint: { 100: "#dcfce7", 200: "#bbf7d0", 300: "#86efac" }, berry: { 100: "#fce7f3", 200: "#fbcfe8", 300: "#f9a8d4" }, skycandy: { 100: "#e0f2fe", 200: "#bae6fd", 300: "#7dd3fc" } }, fontFamily: { display: ["Fraunces", "serif"], sans: ["Manrope", "sans-serif"] }, boxShadow: { glow: "0 20px 60px rgba(236, 72, 153, 0.14)", card: "0 18px 40px rgba(249, 168, 212, 0.18)" } } } };',
+		'before'
+	);
+
 	wp_enqueue_style( 'bellas-kitchen-style', get_stylesheet_uri(), array(), wp_get_theme()->get( 'Version' ) );
 	wp_enqueue_script( 'bellas-kitchen-script', get_template_directory_uri() . '/js/main.js', array(), wp_get_theme()->get( 'Version' ), true );
 }

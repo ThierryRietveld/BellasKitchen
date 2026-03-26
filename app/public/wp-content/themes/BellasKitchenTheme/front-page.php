@@ -12,61 +12,169 @@ if ( ! defined( 'ABSPATH' ) ) {
 get_header();
 ?>
 
-<div class="container">
-	<?php
-	if ( have_posts() ) {
-		while ( have_posts() ) {
-			the_post();
-			?>
-			<div class="hero-section">
-				<h1 class="hero-title"><?php the_title(); ?></h1>
-				<?php if ( has_post_thumbnail() ) : ?>
-					<div class="hero-image">
-						<?php the_post_thumbnail( 'large' ); ?>
+<?php
+$front_page = null;
+
+if ( have_posts() ) {
+	while ( have_posts() ) {
+		the_post();
+		$front_page = array(
+			'title'      => get_the_title(),
+			'content'    => get_the_content(),
+			'permalink'  => get_permalink(),
+			'thumbnail'  => get_the_post_thumbnail( get_the_ID(), 'large', array( 'class' => 'h-full w-full object-cover' ) ),
+		);
+	}
+	wp_reset_postdata();
+}
+
+$latest_recipes = new WP_Query(
+	array(
+		'post_type'           => 'recipe',
+		'posts_per_page'      => 3,
+		'orderby'             => 'date',
+		'order'               => 'DESC',
+		'ignore_sticky_posts' => true,
+	)
+);
+
+$recipe_archive_url = get_post_type_archive_link( 'recipe' );
+?>
+
+<div class="relative overflow-hidden bg-[linear-gradient(180deg,#fff8fb_0%,#fffdf3_46%,#fef7ff_100%)] text-stone-800">
+	<div class="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,_rgba(249,168,212,0.35),_transparent_58%)]"></div>
+	<div class="absolute -left-12 top-20 h-52 w-52 rounded-full bg-butter-200/70 blur-3xl"></div>
+	<div class="absolute right-0 top-24 h-72 w-72 rounded-full bg-berry-200/55 blur-3xl"></div>
+	<div class="absolute left-1/3 top-[30rem] h-64 w-64 rounded-full bg-mint-200/60 blur-3xl"></div>
+	<div class="absolute right-1/4 top-[38rem] h-56 w-56 rounded-full bg-skycandy-200/60 blur-3xl"></div>
+
+	<div class="container relative px-5 py-8 md:px-8 md:py-10 lg:py-12">
+		<section class="grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)] lg:items-center">
+			<div class="space-y-4">
+				<div class="space-y-3">
+					<h1 class="max-w-3xl font-display text-4xl font-semibold leading-[0.95] text-balance text-stone-900 md:text-5xl lg:text-6xl">
+						<?php echo esc_html( $front_page['title'] ?? get_bloginfo( 'name' ) ); ?>
+					</h1>
+					<div class="max-w-2xl text-sm leading-7 text-stone-600 md:text-base">
+						<?php echo wp_kses_post( wpautop( $front_page['content'] ?? get_bloginfo( 'description' ) ) ); ?>
 					</div>
-				<?php endif; ?>
-				<div class="hero-content">
-					<?php the_content(); ?>
+				</div>
+
+				<div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+					<?php if ( $recipe_archive_url ) : ?>
+						<a href="<?php echo esc_url( $recipe_archive_url ); ?>" class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-rose-300 via-amber-200 to-peach-200 px-5 py-3 text-sm font-bold text-stone-900 shadow-card transition hover:scale-[1.01] hover:from-rose-200 hover:to-butter-200">Bekijk alle recepten</a>
+					<?php endif; ?>
+					<a href="#latest-recipes" class="inline-flex items-center justify-center rounded-full border border-rose-200 bg-white/75 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-rose-50">Nieuwste gerechten</a>
 				</div>
 			</div>
-			<?php
-		}
-	}
 
-	// Display latest posts
-	$args = array(
-		'posts_per_page' => 6,
-		'orderby'        => 'date',
-		'order'          => 'DESC',
-	);
-	$latest_posts = new WP_Query( $args );
-
-	if ( $latest_posts->have_posts() ) {
-		echo '<div class="latest-posts"><h2>Latest Posts</h2><div class="posts-grid">';
-		while ( $latest_posts->have_posts() ) {
-			$latest_posts->the_post();
-			?>
-			<article class="post-card">
-				<?php if ( has_post_thumbnail() ) : ?>
-					<div class="post-image">
-						<a href="<?php the_permalink(); ?>">
-							<?php the_post_thumbnail( 'medium' ); ?>
-						</a>
+			<div class="relative">
+				<div class="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-rose-200/70 via-butter-100/80 to-skycandy-200/70 blur-2xl"></div>
+				<div class="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 shadow-glow backdrop-blur">
+					<?php if ( ! empty( $front_page['thumbnail'] ) ) : ?>
+						<div class="aspect-[4/3] overflow-hidden lg:aspect-[5/4]">
+							<?php echo wp_kses_post( $front_page['thumbnail'] ); ?>
+						</div>
+					<?php else : ?>
+						<div class="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-peach-100 via-butter-100 to-berry-100 p-8 text-center text-stone-900 lg:aspect-[5/4]">
+							<div>
+								<p class="text-sm font-semibold uppercase tracking-[0.28em] text-rose-500">Welkom</p>
+								<p class="mt-4 font-display text-4xl leading-none">Kook iets moois</p>
+							</div>
+						</div>
+					<?php endif; ?>
+					<div class="space-y-2 border-t border-rose-100 bg-white/90 p-4 md:p-5">
+						<p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-rose-500">Van de thuiskeuken</p>
+						<p class="font-display text-xl text-stone-900">Zachte kleuren, verse recepten en meteen iets lekkers in beeld.</p>
 					</div>
-				<?php endif; ?>
-				<h3 class="post-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h3>
-				<div class="post-meta">
-					<span class="post-date"><?php echo get_the_date(); ?></span>
 				</div>
-				<p class="post-excerpt"><?php echo wp_trim_words( get_the_excerpt(), 20 ); ?></p>
-				<a href="<?php the_permalink(); ?>" class="read-more">Read More</a>
-			</article>
-			<?php
-		}
-		echo '</div></div>';
-		wp_reset_postdata();
-	}
-	?>
+			</div>
+		</section>
+
+		<section id="latest-recipes" class="mt-10 space-y-6 lg:mt-12">
+			<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+				<div class="space-y-3">
+					<p class="text-xs font-semibold uppercase tracking-[0.28em] text-rose-500">Nieuwste recepten</p>
+					<h2 class="font-display text-3xl text-stone-900 md:text-4xl">Drie verse ideeën voor vanavond</h2>
+					<p class="max-w-2xl text-sm leading-7 text-stone-600 md:text-base">De nieuwste recepten staan nu sneller in beeld, zodat bezoekers direct kunnen kiezen.</p>
+				</div>
+				<?php if ( $recipe_archive_url ) : ?>
+					<a href="<?php echo esc_url( $recipe_archive_url ); ?>" class="inline-flex items-center gap-2 self-start rounded-full border border-rose-200 bg-white/80 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-rose-50">Naar het receptenoverzicht <span aria-hidden="true">&rarr;</span></a>
+				<?php endif; ?>
+			</div>
+
+			<?php if ( $latest_recipes->have_posts() ) : ?>
+				<div class="grid gap-6 lg:grid-cols-3">
+					<?php
+					$card_index = 0;
+					while ( $latest_recipes->have_posts() ) :
+						$latest_recipes->the_post();
+						$post_id      = get_the_ID();
+						$main_id      = (int) get_post_meta( $post_id, 'recipe_main_image_id', true );
+						$cooking_time = (int) get_post_meta( $post_id, 'recipe_cooking_time', true );
+						$prep_time    = (int) get_post_meta( $post_id, 'recipe_prep_time', true );
+						$difficulty   = get_post_meta( $post_id, 'recipe_difficulty', true );
+						$meal_type    = get_post_meta( $post_id, 'recipe_meal_type', true );
+						$description  = get_post_meta( $post_id, 'recipe_description', true );
+						$total_time   = $prep_time + $cooking_time;
+						$image_html   = $main_id ? wp_get_attachment_image( $main_id, 'large', false, array( 'class' => 'h-full w-full object-cover transition duration-700 group-hover:scale-105' ) ) : get_the_post_thumbnail( $post_id, 'large', array( 'class' => 'h-full w-full object-cover transition duration-700 group-hover:scale-105' ) );
+						$card_class   = 0 === $card_index ? 'lg:col-span-2 lg:grid lg:grid-cols-[minmax(280px,1.05fr)_minmax(0,0.95fr)]' : 'flex flex-col';
+						$image_class  = 0 === $card_index ? 'aspect-[4/3] lg:aspect-auto lg:min-h-[22rem]' : 'aspect-[4/3]';
+						$card_body_class = 0 === $card_index ? 'flex flex-1 flex-col justify-between gap-5 p-6 md:p-7 lg:p-8' : 'flex flex-1 flex-col justify-between gap-4 p-6';
+						$title_class = 0 === $card_index ? 'font-display text-3xl leading-tight text-stone-900 md:text-4xl' : 'font-display text-2xl leading-tight text-stone-900';
+						$description_text = wp_trim_words( $description ?: get_the_excerpt(), 24 );
+						?>
+						<article <?php post_class( 'group overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 shadow-card backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-rose-200 ' . $card_class ); ?>>
+							<a href="<?php the_permalink(); ?>" class="flex h-full flex-col lg:contents">
+								<div class="<?php echo esc_attr( $image_class ); ?> overflow-hidden bg-rose-50">
+									<?php if ( $image_html ) : ?>
+										<?php echo wp_kses_post( $image_html ); ?>
+									<?php else : ?>
+										<div class="flex h-full items-center justify-center bg-gradient-to-br from-peach-100 via-butter-100 to-berry-100 text-5xl text-stone-900">&#127869;</div>
+									<?php endif; ?>
+								</div>
+								<div class="<?php echo esc_attr( $card_body_class ); ?>">
+									<div class="space-y-4">
+										<div class="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+											<?php if ( $meal_type ) : ?>
+												<span class="rounded-full bg-peach-100 px-3 py-2 text-orange-700"><?php echo esc_html( $meal_type ); ?></span>
+											<?php endif; ?>
+											<?php if ( $difficulty ) : ?>
+												<span class="rounded-full bg-berry-100 px-3 py-2 text-rose-700"><?php echo esc_html( ucfirst( $difficulty ) ); ?></span>
+											<?php endif; ?>
+										</div>
+										<h3 class="<?php echo esc_attr( $title_class ); ?>"><?php the_title(); ?></h3>
+										<p class="text-sm leading-7 text-stone-600 md:text-base">
+											<?php echo esc_html( $description_text ); ?>
+										</p>
+									</div>
+
+									<div class="space-y-4">
+										<div class="flex flex-wrap items-center gap-3 text-sm text-stone-700">
+											<?php if ( $total_time > 0 ) : ?>
+												<span class="inline-flex items-center rounded-full border border-rose-100 bg-rose-50 px-3 py-2"><?php echo esc_html( $total_time ); ?> min</span>
+											<?php endif; ?>
+											<span class="inline-flex items-center rounded-full border border-transparent bg-gradient-to-r from-butter-100 to-peach-100 px-3 py-2 text-stone-800">Bekijk recept</span>
+										</div>
+										<span class="inline-flex items-center text-sm font-semibold text-rose-500 transition group-hover:text-rose-600">Open recept <span class="ml-2" aria-hidden="true">&rarr;</span></span>
+									</div>
+								</div>
+							</a>
+						</article>
+						<?php
+						$card_index++;
+					endwhile;
+					?>
+				</div>
+				<?php wp_reset_postdata(); ?>
+			<?php else : ?>
+				<div class="rounded-[2rem] border border-dashed border-rose-200 bg-white/80 p-8 text-center text-stone-600 shadow-card">
+					<p class="font-display text-3xl text-stone-900">Nog geen recepten gepubliceerd</p>
+					<p class="mt-3 text-base leading-7">Zodra je je eerste recepten toevoegt, verschijnen hier automatisch de nieuwste drie gerechten.</p>
+				</div>
+			<?php endif; ?>
+		</section>
+	</div>
 </div>
 
 <?php get_footer();

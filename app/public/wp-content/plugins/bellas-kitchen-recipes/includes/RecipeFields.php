@@ -329,18 +329,12 @@ class RecipeFields {
 	private function getUnits(): array {
 		return [
 			''          => '- none -',
-			'tsp'       => 'tsp',
-			'tbsp'      => 'tbsp',
-			'cup'       => 'cup',
 			'ml'        => 'ml',
 			'l'         => 'l',
 			'g'         => 'g',
 			'kg'        => 'kg',
-			'oz'        => 'oz',
-			'lb'        => 'lb',
-			'piece'     => 'piece(s)',
-			'pinch'     => 'pinch',
-			'to taste'  => 'to taste',
+			'stuks'     => 'stuks',
+			'naar smaak'  => 'naar smaak',
 		];
 	}
 }
