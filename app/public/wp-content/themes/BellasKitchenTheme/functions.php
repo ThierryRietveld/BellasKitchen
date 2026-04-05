@@ -43,10 +43,10 @@ function bellas_kitchen_primary_menu_fallback(): void {
 	);
 
 	echo '<ul id="primary-menu" class="menu m-0 flex list-none flex-wrap items-center gap-2 p-0">';
-	echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700" href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'bellas-kitchen-theme' ) . '</a></li>';
+	echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-amber-300" href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'bellas-kitchen-theme' ) . '</a></li>';
 
 	foreach ( $pages as $page ) {
-		echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700" href="' . esc_url( get_permalink( $page->ID ) ) . '">' . esc_html( $page->post_title ) . '</a></li>';
+		echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-amber-300" href="' . esc_url( get_permalink( $page->ID ) ) . '">' . esc_html( $page->post_title ) . '</a></li>';
 	}
 
 	echo '</ul>';
@@ -89,7 +89,7 @@ function bellas_kitchen_primary_menu_link_classes( array $atts, \WP_Post $item, 
 		return $atts;
 	}
 
-	$link_classes = 'inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700';
+	$link_classes = 'inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-amber-300';
 	$is_active    = ! empty( $item->classes ) && (
 		in_array( 'current-menu-item', $item->classes, true ) ||
 		in_array( 'current_page_item', $item->classes, true ) ||
@@ -97,7 +97,7 @@ function bellas_kitchen_primary_menu_link_classes( array $atts, \WP_Post $item, 
 	);
 
 	if ( $is_active ) {
-		$link_classes .= ' bg-ember-100 text-ember-700';
+		$link_classes .= ' bg-ember-100 text-ember-700 dark:bg-slate-800 dark:text-amber-300';
 	}
 
 	$atts['class'] = isset( $atts['class'] ) ? trim( $atts['class'] . ' ' . $link_classes ) : $link_classes;
@@ -117,24 +117,83 @@ function bellas_kitchen_theme_enqueue() {
 		null
 	);
 
-	wp_enqueue_script(
-		'bellas-kitchen-tailwind',
-		'https://cdn.tailwindcss.com',
-		array(),
-		null,
-		false
-	);
+	$tailwind_css_relative_path = '/assets/css/tailwind.css';
+	$tailwind_css_path          = get_template_directory() . $tailwind_css_relative_path;
+	$tailwind_css_url           = get_template_directory_uri() . $tailwind_css_relative_path;
 
-	wp_add_inline_script(
-		'bellas-kitchen-tailwind',
-		'tailwind.config = { theme: { extend: { colors: { ember: { 50: "#fff8f1", 100: "#ffedd5", 200: "#fed7aa", 300: "#fdba74", 500: "#f97316", 700: "#c2410c", 900: "#7c2d12" }, fig: { 100: "#f3e8ff", 300: "#d8b4fe", 700: "#7e22ce", 900: "#581c87" }, sage: { 100: "#e7f5ec", 300: "#9dd6af", 700: "#2f6a48" }, peach: { 100: "#ffe5d4", 200: "#ffd1ba", 300: "#ffbfa3" }, butter: { 100: "#fff4bf", 200: "#ffe78a", 300: "#ffd95c" }, mint: { 100: "#dcfce7", 200: "#bbf7d0", 300: "#86efac" }, berry: { 100: "#fce7f3", 200: "#fbcfe8", 300: "#f9a8d4" }, skycandy: { 100: "#e0f2fe", 200: "#bae6fd", 300: "#7dd3fc" } }, fontFamily: { display: ["Fraunces", "serif"], sans: ["Manrope", "sans-serif"] }, boxShadow: { glow: "0 20px 60px rgba(236, 72, 153, 0.14)", card: "0 18px 40px rgba(249, 168, 212, 0.18)" } } } };',
-		'before'
-	);
+	if ( file_exists( $tailwind_css_path ) ) {
+		wp_enqueue_style(
+			'bellas-kitchen-tailwind',
+			$tailwind_css_url,
+			array(),
+			(string) filemtime( $tailwind_css_path )
+		);
+	} else {
+		wp_enqueue_script(
+			'bellas-kitchen-tailwind-cdn',
+			'https://cdn.tailwindcss.com',
+			array(),
+			null,
+			false
+		);
+	}
 
 	wp_enqueue_style( 'bellas-kitchen-style', get_stylesheet_uri(), array(), wp_get_theme()->get( 'Version' ) );
 	wp_enqueue_script( 'bellas-kitchen-script', get_template_directory_uri() . '/js/main.js', array(), wp_get_theme()->get( 'Version' ), true );
 }
 add_action( 'wp_enqueue_scripts', 'bellas_kitchen_theme_enqueue' );
+
+/**
+ * Print Tailwind config before CDN script executes.
+ */
+function bellas_kitchen_print_tailwind_config(): void {
+	$tailwind_css_path = get_template_directory() . '/assets/css/tailwind.css';
+	if ( file_exists( $tailwind_css_path ) ) {
+		return;
+	}
+
+	?>
+	<script>
+		window.tailwind = window.tailwind || {};
+		window.tailwind.config = {
+			darkMode: 'class',
+			theme: {
+				container: {
+					center: true,
+					padding: {
+						DEFAULT: '1.25rem',
+						md: '2rem'
+					},
+					screens: {
+						'2xl': '1200px'
+					}
+				},
+				extend: {
+					colors: {
+						ember: { 50: '#fff8f1', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdba74', 500: '#f97316', 700: '#c2410c', 900: '#7c2d12' },
+						fig: { 100: '#f3e8ff', 300: '#d8b4fe', 700: '#7e22ce', 900: '#581c87' },
+						sage: { 100: '#e7f5ec', 300: '#9dd6af', 700: '#2f6a48' },
+						peach: { 100: '#ffe5d4', 200: '#ffd1ba', 300: '#ffbfa3' },
+						butter: { 100: '#fff4bf', 200: '#ffe78a', 300: '#ffd95c' },
+						mint: { 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac' },
+						berry: { 100: '#fce7f3', 200: '#fbcfe8', 300: '#f9a8d4' },
+						skycandy: { 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc' }
+					},
+					fontFamily: {
+						display: [ 'Fraunces', 'serif' ],
+						sans: [ 'Manrope', 'sans-serif' ]
+					},
+					boxShadow: {
+						glow: '0 20px 60px rgba(236, 72, 153, 0.14)',
+						card: '0 18px 40px rgba(249, 168, 212, 0.18)'
+					}
+				}
+			}
+		};
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'bellas_kitchen_print_tailwind_config', 1 );
 
 /**
  * Register widget areas

@@ -30,7 +30,7 @@ get_header();
 
 	<article id="recipe-<?php the_ID(); ?>" <?php post_class(); ?>>
 		<!-- Hero Image -->
-		<div class="relative w-full overflow-hidden bg-rose-50">
+		<div class="relative w-full overflow-hidden bg-rose-50 dark:bg-slate-900">
 			<?php if ( $main_url ) : ?>
 				<img src="<?php echo esc_url( $main_url ); ?>"
 				     alt="<?php echo esc_attr( $main_alt ?: get_the_title() ); ?>"
@@ -38,21 +38,21 @@ get_header();
 			<?php elseif ( has_post_thumbnail() ) : ?>
 				<?php the_post_thumbnail( 'large', [ 'class' => 'h-auto w-full object-cover md:max-h-[500px]' ] ); ?>
 			<?php else : ?>
-				<div class="flex h-96 items-center justify-center bg-gradient-to-br from-peach-100 via-butter-100 to-berry-100 text-6xl">&#127869;</div>
+				<div class="flex h-96 items-center justify-center bg-gradient-to-br from-peach-100 via-butter-100 to-berry-100 text-6xl dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">&#127869;</div>
 			<?php endif; ?>
 		</div>
 
 		<!-- Content -->
-		<div class="bg-[linear-gradient(180deg,#fff8fb_0%,#fffdf3_46%,#fef7ff_100%)]">
+		<div class="bg-[linear-gradient(180deg,#fff8fb_0%,#fffdf3_46%,#fef7ff_100%)] dark:bg-slate-950">
 			<div class="container mx-auto max-w-3xl px-5 py-12 md:px-8">
 				<!-- Header -->
 				<header class="space-y-6">
-					<h1 class="font-display text-5xl font-semibold leading-tight text-stone-900 md:text-6xl">
+					<h1 class="font-display text-5xl font-semibold leading-tight text-stone-900 dark:text-slate-100 md:text-6xl">
 						<?php the_title(); ?>
 					</h1>
 
 					<?php if ( $description ) : ?>
-						<p class="text-xl leading-8 text-stone-600">
+						<p class="text-xl leading-8 text-stone-600 dark:text-slate-300">
 							<?php echo esc_html( $description ); ?>
 						</p>
 					<?php endif; ?>
@@ -72,13 +72,13 @@ get_header();
 						<?php endif; ?>
 
 						<?php if ( $prep_time ) : ?>
-							<span class="inline-flex items-center rounded-full border border-rose-100 bg-white px-4 py-2 text-sm text-stone-700">
+							<span class="inline-flex items-center rounded-full border border-rose-100 bg-white px-4 py-2 text-sm text-stone-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
 								Prep: <span class="ml-2 font-semibold"><?php echo esc_html( $prep_time ); ?> min</span>
 							</span>
 						<?php endif; ?>
 
 						<?php if ( $cooking_time ) : ?>
-							<span class="inline-flex items-center rounded-full border border-rose-100 bg-white px-4 py-2 text-sm text-stone-700">
+							<span class="inline-flex items-center rounded-full border border-rose-100 bg-white px-4 py-2 text-sm text-stone-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
 								Cook: <span class="ml-2 font-semibold"><?php echo esc_html( $cooking_time ); ?> min</span>
 							</span>
 						<?php endif; ?>
@@ -90,11 +90,11 @@ get_header();
 					<!-- Ingredients -->
 					<?php if ( is_array( $ingredients ) && ! empty( $ingredients ) ) : ?>
 						<section class="lg:col-span-1">
-							<h2 class="font-display text-2xl font-semibold text-stone-900">Ingrediënten</h2>
-							<div class="mt-4 space-y-3 rounded-2xl border border-rose-100 bg-white/80 p-6">
+							<h2 class="font-display text-2xl font-semibold text-stone-900 dark:text-slate-100">Ingrediënten</h2>
+							<div class="mt-4 space-y-3 rounded-2xl border border-rose-100 bg-white/80 p-6 dark:border-slate-700 dark:bg-slate-900/90">
 								<ul class="space-y-3">
 									<?php foreach ( $ingredients as $ingredient ) : ?>
-										<li class="flex items-start gap-3 text-stone-700">
+										<li class="flex items-start gap-3 text-stone-700 dark:text-slate-300">
 											<span class="mt-1 inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-rose-400"></span>
 											<div>
 												<?php if ( ! empty( $ingredient['quantity'] ) || ! empty( $ingredient['unit'] ) ) : ?>
@@ -103,7 +103,7 @@ get_header();
 														<?php echo esc_html( $ingredient['unit'] ); ?>
 													</span>
 												<?php endif; ?>
-												<span class="text-stone-600">
+												<span class="text-stone-600 dark:text-slate-300">
 													<?php echo esc_html( $ingredient['item'] ); ?>
 												</span>
 											</div>
@@ -117,14 +117,14 @@ get_header();
 					<!-- Instructions -->
 					<?php if ( is_array( $instructions ) && ! empty( $instructions ) ) : ?>
 						<section class="lg:col-span-2">
-							<h2 class="font-display text-2xl font-semibold text-stone-900">Bereidingswijze</h2>
+							<h2 class="font-display text-2xl font-semibold text-stone-900 dark:text-slate-100">Bereidingswijze</h2>
 							<ol class="mt-4 space-y-6">
 								<?php foreach ( $instructions as $index => $step ) : ?>
 									<li class="flex gap-4">
 										<span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-butter-100 to-peach-100 font-semibold text-stone-900">
 											<?php echo esc_html( $index + 1 ); ?>
 										</span>
-										<div class="pt-1 text-base leading-7 text-stone-700">
+										<div class="pt-1 text-base leading-7 text-stone-700 dark:text-slate-300">
 											<?php echo wp_kses_post( nl2br( $step['text'] ) ); ?>
 										</div>
 									</li>
@@ -139,17 +139,17 @@ get_header();
 				$content = get_the_content();
 				if ( $content ) :
 				?>
-					<section class="mt-12 border-t border-rose-100 pt-8">
-						<h2 class="font-display text-2xl font-semibold text-stone-900">Tips & Opmerkingen</h2>
-						<div class="mt-6 space-y-4 text-base leading-7 text-stone-700">
+					<section class="mt-12 border-t border-rose-100 pt-8 dark:border-slate-700">
+						<h2 class="font-display text-2xl font-semibold text-stone-900 dark:text-slate-100">Tips & Opmerkingen</h2>
+						<div class="mt-6 space-y-4 text-base leading-7 text-stone-700 dark:text-slate-300">
 							<?php the_content(); ?>
 						</div>
 					</section>
 				<?php endif; ?>
 
 				<!-- Back Link -->
-				<div class="mt-12 border-t border-rose-100 pt-8">
-					<a href="<?php echo esc_url( get_post_type_archive_link( 'recipe' ) ); ?>" class="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-rose-50">
+				<div class="mt-12 border-t border-rose-100 pt-8 dark:border-slate-700">
+					<a href="<?php echo esc_url( get_post_type_archive_link( 'recipe' ) ); ?>" class="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-rose-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
 						<span>&larr;</span> Terug naar alle recepten
 					</a>
 				</div>
