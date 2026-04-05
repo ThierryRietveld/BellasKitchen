@@ -38,12 +38,12 @@ get_header();
 			<?php elseif ( has_post_thumbnail() ) : ?>
 				<?php the_post_thumbnail( 'large', [ 'class' => 'h-auto w-full object-cover md:max-h-[500px]' ] ); ?>
 			<?php else : ?>
-				<div class="flex h-96 items-center justify-center bg-gradient-to-br from-peach-100 via-butter-100 to-berry-100 text-6xl dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">&#127869;</div>
+				<div class="flex h-96 items-center justify-center bg-slate-100 text-6xl dark:bg-slate-800">&#127869;</div>
 			<?php endif; ?>
 		</div>
 
 		<!-- Content -->
-		<div class="bg-[linear-gradient(180deg,#fff8fb_0%,#fffdf3_46%,#fef7ff_100%)] dark:bg-slate-950">
+		<div class="bg-slate-50 dark:bg-slate-950">
 			<div class="container mx-auto max-w-3xl px-5 py-12 md:px-8">
 				<!-- Header -->
 				<header class="space-y-6">
@@ -121,7 +121,7 @@ get_header();
 							<ol class="mt-4 space-y-6">
 								<?php foreach ( $instructions as $index => $step ) : ?>
 									<li class="flex gap-4">
-										<span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-butter-100 to-peach-100 font-semibold text-stone-900">
+										<span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-stone-900 dark:bg-slate-700 dark:text-slate-100">
 											<?php echo esc_html( $index + 1 ); ?>
 										</span>
 										<div class="pt-1 text-base leading-7 text-stone-700 dark:text-slate-300">
