@@ -32,6 +32,81 @@ function bellas_kitchen_theme_setup() {
 add_action( 'after_setup_theme', 'bellas_kitchen_theme_setup' );
 
 /**
+ * Fallback menu output for primary navigation.
+ */
+function bellas_kitchen_primary_menu_fallback(): void {
+	$pages = get_pages(
+		array(
+			'parent'      => 0,
+			'sort_column' => 'menu_order,post_title',
+		)
+	);
+
+	echo '<ul id="primary-menu" class="menu m-0 flex list-none flex-wrap items-center gap-2 p-0">';
+	echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700" href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'bellas-kitchen-theme' ) . '</a></li>';
+
+	foreach ( $pages as $page ) {
+		echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700" href="' . esc_url( get_permalink( $page->ID ) ) . '">' . esc_html( $page->post_title ) . '</a></li>';
+	}
+
+	echo '</ul>';
+}
+
+/**
+ * Render primary navigation menu.
+ */
+function bellas_kitchen_render_primary_menu(): void {
+	wp_nav_menu(
+		array(
+			'theme_location' => 'primary',
+			'menu_id'        => 'primary-menu',
+			'menu_class'     => 'menu m-0 flex list-none flex-wrap items-center gap-2 p-0',
+			'container'      => false,
+			'fallback_cb'    => 'bellas_kitchen_primary_menu_fallback',
+		)
+	);
+}
+
+/**
+ * Add Tailwind classes to primary menu <li> items.
+ */
+function bellas_kitchen_primary_menu_item_classes( array $classes, \WP_Post $item, \stdClass $args ): array {
+	if ( empty( $args->theme_location ) || 'primary' !== $args->theme_location ) {
+		return $classes;
+	}
+
+	$classes[] = 'menu-item';
+
+	return $classes;
+}
+add_filter( 'nav_menu_css_class', 'bellas_kitchen_primary_menu_item_classes', 10, 3 );
+
+/**
+ * Add Tailwind classes to primary menu links.
+ */
+function bellas_kitchen_primary_menu_link_classes( array $atts, \WP_Post $item, \stdClass $args ): array {
+	if ( empty( $args->theme_location ) || 'primary' !== $args->theme_location ) {
+		return $atts;
+	}
+
+	$link_classes = 'inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700';
+	$is_active    = ! empty( $item->classes ) && (
+		in_array( 'current-menu-item', $item->classes, true ) ||
+		in_array( 'current_page_item', $item->classes, true ) ||
+		in_array( 'current-menu-ancestor', $item->classes, true )
+	);
+
+	if ( $is_active ) {
+		$link_classes .= ' bg-ember-100 text-ember-700';
+	}
+
+	$atts['class'] = isset( $atts['class'] ) ? trim( $atts['class'] . ' ' . $link_classes ) : $link_classes;
+
+	return $atts;
+}
+add_filter( 'nav_menu_link_attributes', 'bellas_kitchen_primary_menu_link_classes', 10, 3 );
+
+/**
  * Enqueue styles and scripts
  */
 function bellas_kitchen_theme_enqueue() {

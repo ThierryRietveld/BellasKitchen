@@ -40,7 +40,7 @@ class RecipePostType {
 			'show_ui'            => true,
 			'show_in_menu'       => true,
 			'query_var'          => true,
-			'rewrite'            => [ 'slug' => 'recipe' ],
+			'rewrite'            => [ 'slug' => 'recepten' ],
 			'capability_type'    => 'post',
 			'has_archive'        => true,
 			'hierarchical'       => false,

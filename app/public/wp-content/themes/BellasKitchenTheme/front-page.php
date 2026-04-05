@@ -118,14 +118,15 @@ $recipe_archive_url = get_post_type_archive_link( 'recipe' );
 						$description  = get_post_meta( $post_id, 'recipe_description', true );
 						$total_time   = $prep_time + $cooking_time;
 						$image_html   = $main_id ? wp_get_attachment_image( $main_id, 'large', false, array( 'class' => 'h-full w-full object-cover transition duration-700 group-hover:scale-105' ) ) : get_the_post_thumbnail( $post_id, 'large', array( 'class' => 'h-full w-full object-cover transition duration-700 group-hover:scale-105' ) );
-						$card_class   = 0 === $card_index ? 'lg:col-span-2 lg:grid lg:grid-cols-[minmax(280px,1.05fr)_minmax(0,0.95fr)]' : 'flex flex-col';
+						$card_class   = 0 === $card_index ? 'lg:col-span-2' : '';
+						$link_class   = 0 === $card_index ? 'flex flex-col lg:grid lg:grid-cols-[minmax(280px,1.05fr)_minmax(0,0.95fr)]' : 'flex flex-col';
 						$image_class  = 0 === $card_index ? 'aspect-[4/3] lg:aspect-auto lg:min-h-[22rem]' : 'aspect-[4/3]';
 						$card_body_class = 0 === $card_index ? 'flex flex-1 flex-col justify-between gap-5 p-6 md:p-7 lg:p-8' : 'flex flex-1 flex-col justify-between gap-4 p-6';
 						$title_class = 0 === $card_index ? 'font-display text-3xl leading-tight text-stone-900 md:text-4xl' : 'font-display text-2xl leading-tight text-stone-900';
 						$description_text = wp_trim_words( $description ?: get_the_excerpt(), 24 );
 						?>
 						<article <?php post_class( 'group overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 shadow-card backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-rose-200 ' . $card_class ); ?>>
-							<a href="<?php the_permalink(); ?>" class="flex h-full flex-col lg:contents">
+							<a href="<?php the_permalink(); ?>" class="<?php echo esc_attr( $link_class ); ?> h-full">
 								<div class="<?php echo esc_attr( $image_class ); ?> overflow-hidden bg-rose-50">
 									<?php if ( $image_html ) : ?>
 										<?php echo wp_kses_post( $image_html ); ?>
