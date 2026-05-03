@@ -36,6 +36,7 @@ class Installer {
 		$recepten_sql = "CREATE TABLE {$recepten_table} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			naam varchar(255) NOT NULL,
+			slug varchar(200) NOT NULL DEFAULT '',
 			beschrijving longtext NOT NULL,
 			foto_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			aantal_personen int(10) unsigned NOT NULL DEFAULT 0,
@@ -46,6 +47,7 @@ class Installer {
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			KEY naam (naam(191)),
+			KEY slug (slug(191)),
 			KEY moeilijkheid (moeilijkheid),
 			KEY soort_gerecht (soort_gerecht)
 		) {$charset_collate};";
@@ -82,6 +84,7 @@ class Installer {
 		dbDelta( $instructies_sql );
 
 		self::migrateLegacyJsonFields();
+		self::migrateSlugs();
 
 		update_option( 'bellas_kitchen_recepten_db_version', BKR_RECEPTEN_DB_VERSION );
 	}
@@ -154,6 +157,81 @@ class Installer {
 				self::migrateLegacyInstructions( $recept_id, (string) $row['instructies'] );
 			}
 		}
+	}
+
+	private static function migrateSlugs(): void {
+		global $wpdb;
+
+		$recepten_table = self::getTableName();
+
+		if ( ! self::columnExists( $recepten_table, 'slug' ) ) {
+			return;
+		}
+
+		$rows = $wpdb->get_results(
+			"SELECT id, naam, slug FROM {$recepten_table} WHERE slug = '' OR slug IS NULL ORDER BY id ASC",
+			ARRAY_A
+		);
+
+		if ( ! is_array( $rows ) || empty( $rows ) ) {
+			return;
+		}
+
+		foreach ( $rows as $row ) {
+			$recept_id = absint( $row['id'] ?? 0 );
+
+			if ( $recept_id <= 0 ) {
+				continue;
+			}
+
+			$slug = self::generateUniqueSlug( (string) ( $row['naam'] ?? '' ), $recept_id );
+
+			$wpdb->update(
+				$recepten_table,
+				[ 'slug' => $slug ],
+				[ 'id' => $recept_id ],
+				[ '%s' ],
+				[ '%d' ]
+			);
+		}
+	}
+
+	public static function generateUniqueSlug( string $name, int $exclude_id = 0 ): string {
+		global $wpdb;
+
+		$table_name = self::getTableName();
+		$base_slug  = sanitize_title( $name );
+
+		if ( '' === $base_slug ) {
+			$base_slug = 'recept';
+		}
+
+		$base_slug = substr( $base_slug, 0, 180 );
+		$slug      = $base_slug;
+		$suffix    = 2;
+
+		while ( self::slugExists( $table_name, $slug, $exclude_id ) ) {
+			$slug = substr( $base_slug, 0, max( 1, 180 - strlen( (string) $suffix ) - 1 ) ) . '-' . $suffix;
+			$suffix++;
+		}
+
+		return $slug;
+	}
+
+	private static function slugExists( string $table_name, string $slug, int $exclude_id ): bool {
+		global $wpdb;
+
+		$query = "SELECT COUNT(*) FROM {$table_name} WHERE slug = %s";
+		$args  = [ $slug ];
+
+		if ( $exclude_id > 0 ) {
+			$query .= ' AND id != %d';
+			$args[] = $exclude_id;
+		}
+
+		$count = (int) $wpdb->get_var( $wpdb->prepare( $query, ...$args ) );
+
+		return $count > 0;
 	}
 
 	private static function migrateLegacyIngredients( int $recept_id, string $raw_ingredients ): void {

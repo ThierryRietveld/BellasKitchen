@@ -28,17 +28,9 @@ if ( have_posts() ) {
 	wp_reset_postdata();
 }
 
-$latest_recipes = new WP_Query(
-	array(
-		'post_type'           => 'recipe',
-		'posts_per_page'      => 3,
-		'orderby'             => 'date',
-		'order'               => 'DESC',
-		'ignore_sticky_posts' => true,
-	)
-);
-
-$recipe_archive_url = get_post_type_archive_link( 'recipe' );
+$repository         = bellas_kitchen_get_recept_repository();
+$latest_recipes     = $repository ? $repository->getLatest( 3 ) : array();
+$recipe_archive_url = bellas_kitchen_get_recepten_archive_url();
 ?>
 
 <div class="relative overflow-hidden bg-slate-50 text-stone-800 dark:bg-slate-950 dark:text-slate-200">
@@ -97,33 +89,25 @@ $recipe_archive_url = get_post_type_archive_link( 'recipe' );
 				<?php endif; ?>
 			</div>
 
-			<?php if ( $latest_recipes->have_posts() ) : ?>
+			<?php if ( ! empty( $latest_recipes ) ) : ?>
 				<div class="grid gap-6 lg:grid-cols-3">
 					<?php
 					$card_index = 0;
-					while ( $latest_recipes->have_posts() ) :
-						$latest_recipes->the_post();
-						$post_id      = get_the_ID();
-						$main_id      = (int) get_post_meta( $post_id, 'recipe_main_image_id', true );
-						$cooking_time = (int) get_post_meta( $post_id, 'recipe_cooking_time', true );
-						$prep_time    = (int) get_post_meta( $post_id, 'recipe_prep_time', true );
-						$difficulty   = get_post_meta( $post_id, 'recipe_difficulty', true );
-						$meal_type    = get_post_meta( $post_id, 'recipe_meal_type', true );
-						$description  = get_post_meta( $post_id, 'recipe_description', true );
-						$total_time   = $prep_time + $cooking_time;
-						$image_html   = $main_id ? wp_get_attachment_image( $main_id, 'large', false, array( 'class' => 'h-full w-full object-cover transition duration-700 group-hover:scale-105' ) ) : get_the_post_thumbnail( $post_id, 'large', array( 'class' => 'h-full w-full object-cover transition duration-700 group-hover:scale-105' ) );
-						$card_class   = 0 === $card_index ? 'lg:col-span-2' : '';
-						$link_class   = 0 === $card_index ? 'flex flex-col lg:grid lg:grid-cols-[minmax(280px,1.05fr)_minmax(0,0.95fr)]' : 'flex flex-col';
-						$image_class  = 0 === $card_index ? 'aspect-[4/3] lg:aspect-auto lg:min-h-[22rem]' : 'aspect-[4/3]';
+					foreach ( $latest_recipes as $recept ) :
+						$image_url       = bellas_kitchen_get_recept_image_url( $recept, 'large' );
+						$image_alt       = bellas_kitchen_get_recept_image_alt( $recept );
+						$card_class      = 0 === $card_index ? 'lg:col-span-2' : '';
+						$link_class      = 0 === $card_index ? 'flex flex-col lg:grid lg:grid-cols-[minmax(280px,1.05fr)_minmax(0,0.95fr)]' : 'flex flex-col';
+						$image_class     = 0 === $card_index ? 'aspect-[4/3] lg:aspect-auto lg:min-h-[22rem]' : 'aspect-[4/3]';
 						$card_body_class = 0 === $card_index ? 'flex flex-1 flex-col justify-between gap-5 p-6 md:p-7 lg:p-8' : 'flex flex-1 flex-col justify-between gap-4 p-6';
-						$title_class = 0 === $card_index ? 'font-display text-3xl leading-tight text-stone-900 dark:text-slate-100 md:text-4xl' : 'font-display text-2xl leading-tight text-stone-900 dark:text-slate-100';
-						$description_text = wp_trim_words( $description ?: get_the_excerpt(), 24 );
+						$title_class     = 0 === $card_index ? 'font-display text-3xl leading-tight text-stone-900 dark:text-slate-100 md:text-4xl' : 'font-display text-2xl leading-tight text-stone-900 dark:text-slate-100';
+						$description_text = wp_trim_words( (string) ( $recept['beschrijving'] ?? '' ), 24 );
 						?>
-						<article <?php post_class( 'group overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 shadow-card backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-rose-200 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:border-slate-600 ' . $card_class ); ?>>
-							<a href="<?php the_permalink(); ?>" class="<?php echo esc_attr( $link_class ); ?> h-full">
+						<article id="recept-<?php echo esc_attr( $recept['id'] ); ?>" class="group overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 shadow-card backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-rose-200 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:border-slate-600 <?php echo esc_attr( $card_class ); ?>">
+							<a href="<?php echo esc_url( bellas_kitchen_get_recept_url( $recept ) ); ?>" class="<?php echo esc_attr( $link_class ); ?> h-full">
 								<div class="<?php echo esc_attr( $image_class ); ?> overflow-hidden bg-rose-50">
-									<?php if ( $image_html ) : ?>
-										<?php echo wp_kses_post( $image_html ); ?>
+									<?php if ( $image_url ) : ?>
+										<img src="<?php echo esc_url( $image_url ); ?>" alt="<?php echo esc_attr( $image_alt ); ?>" class="h-full w-full object-cover transition duration-700 group-hover:scale-105">
 									<?php else : ?>
 										<div class="flex h-full items-center justify-center bg-slate-100 text-5xl text-stone-900 dark:bg-slate-800 dark:text-slate-100">&#127869;</div>
 									<?php endif; ?>
@@ -131,14 +115,14 @@ $recipe_archive_url = get_post_type_archive_link( 'recipe' );
 								<div class="<?php echo esc_attr( $card_body_class ); ?>">
 									<div class="space-y-4">
 										<div class="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
-											<?php if ( $meal_type ) : ?>
-												<span class="rounded-full bg-peach-100 px-3 py-2 text-orange-700"><?php echo esc_html( $meal_type ); ?></span>
+											<?php if ( ! empty( $recept['soort_gerecht'] ) ) : ?>
+												<span class="rounded-full bg-peach-100 px-3 py-2 text-orange-700"><?php echo esc_html( bellas_kitchen_format_recept_label( (string) $recept['soort_gerecht'] ) ); ?></span>
 											<?php endif; ?>
-											<?php if ( $difficulty ) : ?>
-												<span class="rounded-full bg-berry-100 px-3 py-2 text-rose-700"><?php echo esc_html( ucfirst( $difficulty ) ); ?></span>
+											<?php if ( ! empty( $recept['moeilijkheid'] ) ) : ?>
+												<span class="rounded-full bg-berry-100 px-3 py-2 text-rose-700"><?php echo esc_html( bellas_kitchen_format_recept_label( (string) $recept['moeilijkheid'] ) ); ?></span>
 											<?php endif; ?>
 										</div>
-										<h3 class="<?php echo esc_attr( $title_class ); ?>"><?php the_title(); ?></h3>
+										<h3 class="<?php echo esc_attr( $title_class ); ?>"><?php echo esc_html( $recept['naam'] ); ?></h3>
 										<p class="text-sm leading-7 text-stone-600 dark:text-slate-300 md:text-base">
 											<?php echo esc_html( $description_text ); ?>
 										</p>
@@ -146,8 +130,8 @@ $recipe_archive_url = get_post_type_archive_link( 'recipe' );
 
 									<div class="space-y-4">
 										<div class="flex flex-wrap items-center gap-3 text-sm text-stone-700 dark:text-slate-300">
-											<?php if ( $total_time > 0 ) : ?>
-												<span class="inline-flex items-center rounded-full border border-rose-100 bg-rose-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800"><?php echo esc_html( $total_time ); ?> min</span>
+											<?php if ( ! empty( $recept['bereidingstijd'] ) ) : ?>
+												<span class="inline-flex items-center rounded-full border border-rose-100 bg-rose-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800"><?php echo esc_html( bellas_kitchen_format_recept_duration( (int) $recept['bereidingstijd'] ) ); ?></span>
 											<?php endif; ?>
 											<span class="inline-flex items-center rounded-full border border-transparent bg-slate-100 px-3 py-2 text-stone-800 dark:bg-slate-800 dark:text-slate-100">Bekijk recept</span>
 										</div>
@@ -158,10 +142,9 @@ $recipe_archive_url = get_post_type_archive_link( 'recipe' );
 						</article>
 						<?php
 						$card_index++;
-					endwhile;
+					endforeach;
 					?>
 				</div>
-				<?php wp_reset_postdata(); ?>
 			<?php else : ?>
 				<div class="rounded-[2rem] border border-dashed border-rose-200 bg-white/80 p-8 text-center text-stone-600 shadow-card dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300">
 					<p class="font-display text-3xl text-stone-900 dark:text-slate-100">Nog geen recepten gepubliceerd</p>

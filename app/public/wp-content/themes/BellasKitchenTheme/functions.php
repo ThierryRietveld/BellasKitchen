@@ -210,3 +210,160 @@ function bellas_kitchen_theme_widgets_init() {
 	) );
 }
 add_action( 'widgets_init', 'bellas_kitchen_theme_widgets_init' );
+
+/**
+ * Get the recepten repository from the custom plugin.
+ */
+function bellas_kitchen_get_recept_repository(): ?\BellasKitchenRecepten\Database\ReceptRepository {
+	static $repository = null;
+	static $loaded     = false;
+
+	if ( $loaded ) {
+		return $repository;
+	}
+
+	$loaded = true;
+
+	if ( ! class_exists( '\BellasKitchenRecepten\Database\ReceptRepository' ) ) {
+		return null;
+	}
+
+	$repository = new \BellasKitchenRecepten\Database\ReceptRepository();
+
+	return $repository;
+}
+
+/**
+ * Get the recepten archive URL.
+ */
+function bellas_kitchen_get_recepten_archive_url(): string {
+	if ( class_exists( '\BellasKitchenRecepten\Frontend\ReceptenFrontend' ) ) {
+		return \BellasKitchenRecepten\Frontend\ReceptenFrontend::getArchiveUrl();
+	}
+
+	return home_url( '/recepten/' );
+}
+
+/**
+ * Get the permalink for a recept row.
+ */
+function bellas_kitchen_get_recept_url( array $recept ): string {
+	if ( class_exists( '\BellasKitchenRecepten\Frontend\ReceptenFrontend' ) ) {
+		return \BellasKitchenRecepten\Frontend\ReceptenFrontend::getRecipeUrl( $recept );
+	}
+
+	return bellas_kitchen_get_recepten_archive_url();
+}
+
+/**
+ * Get the current recepten archive page.
+ */
+function bellas_kitchen_get_recepten_archive_page(): int {
+	if ( class_exists( '\BellasKitchenRecepten\Frontend\ReceptenFrontend' ) ) {
+		return \BellasKitchenRecepten\Frontend\ReceptenFrontend::getCurrentArchivePage();
+	}
+
+	return 1;
+}
+
+/**
+ * Get the current recept slug.
+ */
+function bellas_kitchen_get_current_recept_slug(): string {
+	if ( class_exists( '\BellasKitchenRecepten\Frontend\ReceptenFrontend' ) ) {
+		return \BellasKitchenRecepten\Frontend\ReceptenFrontend::getCurrentRecipeSlug();
+	}
+
+	return '';
+}
+
+/**
+ * Get the image URL for a recept.
+ */
+function bellas_kitchen_get_recept_image_url( array $recept, string $size = 'large' ): string {
+	$foto_id = absint( $recept['foto_id'] ?? 0 );
+
+	if ( $foto_id <= 0 ) {
+		return '';
+	}
+
+	$image_url = wp_get_attachment_image_url( $foto_id, $size );
+
+	return $image_url ?: '';
+}
+
+/**
+ * Get the image alt text for a recept.
+ */
+function bellas_kitchen_get_recept_image_alt( array $recept ): string {
+	$foto_id = absint( $recept['foto_id'] ?? 0 );
+
+	if ( $foto_id <= 0 ) {
+		return (string) ( $recept['naam'] ?? '' );
+	}
+
+	$alt = get_post_meta( $foto_id, '_wp_attachment_image_alt', true );
+
+	return is_string( $alt ) && '' !== $alt ? $alt : (string) ( $recept['naam'] ?? '' );
+}
+
+/**
+ * Format recipe labels for display.
+ */
+function bellas_kitchen_format_recept_label( string $value ): string {
+	$value = str_replace( '_', ' ', $value );
+
+	return ucfirst( $value );
+}
+
+/**
+ * Format ingredient units for display.
+ */
+function bellas_kitchen_format_recept_unit( string $unit ): string {
+	$units = array(
+		''           => '',
+		'ml'         => 'ml',
+		'l'          => 'l',
+		'g'          => 'g',
+		'kg'         => 'kg',
+		'tl'         => 'tl',
+		'el'         => 'el',
+		'snufje'     => 'snufje',
+		'stuks'      => 'stuks',
+		'naar_smaak' => 'naar smaak',
+	);
+
+	if ( isset( $units[ $unit ] ) ) {
+		return $units[ $unit ];
+	}
+
+	return str_replace( '_', ' ', $unit );
+}
+
+/**
+ * Format a duration in minutes.
+ */
+function bellas_kitchen_format_recept_duration( int $minutes ): string {
+	if ( $minutes <= 0 ) {
+		return '';
+	}
+
+	return sprintf(
+		_n( '%d minuut', '%d minuten', $minutes, 'bellas-kitchen-theme' ),
+		$minutes
+	);
+}
+
+/**
+ * Format servings for display.
+ */
+function bellas_kitchen_format_recept_servings( int $servings ): string {
+	if ( $servings <= 0 ) {
+		return '';
+	}
+
+	return sprintf(
+		_n( '%d persoon', '%d personen', $servings, 'bellas-kitchen-theme' ),
+		$servings
+	);
+}

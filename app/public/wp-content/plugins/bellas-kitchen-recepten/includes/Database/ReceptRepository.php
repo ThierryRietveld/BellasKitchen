@@ -39,6 +39,48 @@ class ReceptRepository {
 		return is_array( $results ) ? $results : [];
 	}
 
+	public function getLatest( int $limit = 3 ): array {
+		global $wpdb;
+
+		$table_name = Installer::getTableName();
+		$limit      = max( 1, $limit );
+		$results    = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table_name} ORDER BY created_at DESC, id DESC LIMIT %d",
+				$limit
+			),
+			ARRAY_A
+		);
+
+		return is_array( $results ) ? $results : [];
+	}
+
+	public function getPaginated( int $page = 1, int $per_page = 9 ): array {
+		global $wpdb;
+
+		$table_name  = Installer::getTableName();
+		$page        = max( 1, $page );
+		$per_page    = max( 1, $per_page );
+		$offset      = ( $page - 1 ) * $per_page;
+		$total_items = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" );
+		$results     = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table_name} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d",
+				$per_page,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		return [
+			'items'        => is_array( $results ) ? $results : [],
+			'total_items'  => $total_items,
+			'per_page'     => $per_page,
+			'current_page' => $page,
+			'total_pages'  => max( 1, (int) ceil( $total_items / $per_page ) ),
+		];
+	}
+
 	public function find( int $id ): ?array {
 		global $wpdb;
 
@@ -52,21 +94,29 @@ class ReceptRepository {
 			return null;
 		}
 
-		$legacy_ingredients  = $row['ingredienten'] ?? '';
-		$legacy_instructions = $row['instructies'] ?? '';
+		return $this->hydrateRecipe( $row );
+	}
 
-		$row['ingredienten'] = $this->getIngredients( $id );
-		$row['instructies']  = $this->getInstructions( $id );
+	public function findBySlug( string $slug ): ?array {
+		global $wpdb;
 
-		if ( empty( $row['ingredienten'] ) && is_string( $legacy_ingredients ) && $legacy_ingredients !== '' ) {
-			$row['ingredienten'] = $this->parseLegacyIngredients( $legacy_ingredients );
+		$table_name = Installer::getTableName();
+		$slug       = sanitize_title( $slug );
+
+		if ( '' === $slug ) {
+			return null;
 		}
 
-		if ( empty( $row['instructies'] ) && is_string( $legacy_instructions ) && $legacy_instructions !== '' ) {
-			$row['instructies'] = $this->parseLegacyInstructions( $legacy_instructions );
+		$row = $wpdb->get_row(
+			$wpdb->prepare( "SELECT * FROM {$table_name} WHERE slug = %s", $slug ),
+			ARRAY_A
+		);
+
+		if ( ! $row ) {
+			return null;
 		}
 
-		return $row;
+		return $this->hydrateRecipe( $row );
 	}
 
 	public function create( array $data ): int {
@@ -76,6 +126,7 @@ class ReceptRepository {
 		$now        = current_time( 'mysql' );
 		$insert_data = [
 			'naam'            => $data['naam'],
+			'slug'            => Installer::generateUniqueSlug( $data['naam'] ),
 			'beschrijving'    => $data['beschrijving'],
 			'foto_id'         => $data['foto_id'],
 			'aantal_personen' => $data['aantal_personen'],
@@ -85,7 +136,7 @@ class ReceptRepository {
 			'created_at'      => $now,
 			'updated_at'      => $now,
 		];
-		$formats = [ '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s' ];
+		$formats = [ '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s' ];
 
 		$this->addLegacyEmptyFields( $insert_data, $formats );
 
@@ -114,17 +165,30 @@ class ReceptRepository {
 		global $wpdb;
 
 		$table_name = Installer::getTableName();
+		$existing   = $this->find( $id );
+
+		if ( ! $existing ) {
+			return false;
+		}
+
 		$update_data = [
 			'naam'            => $data['naam'],
-			'beschrijving'    => $data['beschrijving'],
-			'foto_id'         => $data['foto_id'],
-			'aantal_personen' => $data['aantal_personen'],
-			'bereidingstijd'  => $data['bereidingstijd'],
-			'moeilijkheid'    => $data['moeilijkheid'],
-			'soort_gerecht'   => $data['soort_gerecht'],
-			'updated_at'      => current_time( 'mysql' ),
 		];
-		$formats = [ '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s' ];
+		$formats = [ '%s' ];
+
+		if ( '' === (string) ( $existing['slug'] ?? '' ) ) {
+			$update_data['slug'] = Installer::generateUniqueSlug( $data['naam'], $id );
+			$formats[]          = '%s';
+		}
+
+		$update_data['beschrijving']    = $data['beschrijving'];
+		$update_data['foto_id']         = $data['foto_id'];
+		$update_data['aantal_personen'] = $data['aantal_personen'];
+		$update_data['bereidingstijd']  = $data['bereidingstijd'];
+		$update_data['moeilijkheid']    = $data['moeilijkheid'];
+		$update_data['soort_gerecht']   = $data['soort_gerecht'];
+		$update_data['updated_at']      = current_time( 'mysql' );
+		$formats                        = array_merge( $formats, [ '%s', '%d', '%d', '%d', '%s', '%s', '%s' ] );
 
 		$this->addLegacyEmptyFields( $update_data, $formats );
 
@@ -166,6 +230,30 @@ class ReceptRepository {
 		$deleted              = $wpdb->delete( $table_name, [ 'id' => $id ], [ '%d' ] );
 
 		return $deleted_ingredients !== false && $deleted_instructions !== false && $deleted !== false;
+	}
+
+	private function hydrateRecipe( array $row ): array {
+		$recept_id = absint( $row['id'] ?? 0 );
+
+		if ( $recept_id <= 0 ) {
+			return $row;
+		}
+
+		$legacy_ingredients  = $row['ingredienten'] ?? '';
+		$legacy_instructions = $row['instructies'] ?? '';
+
+		$row['ingredienten'] = $this->getIngredients( $recept_id );
+		$row['instructies']  = $this->getInstructions( $recept_id );
+
+		if ( empty( $row['ingredienten'] ) && is_string( $legacy_ingredients ) && $legacy_ingredients !== '' ) {
+			$row['ingredienten'] = $this->parseLegacyIngredients( $legacy_ingredients );
+		}
+
+		if ( empty( $row['instructies'] ) && is_string( $legacy_instructions ) && $legacy_instructions !== '' ) {
+			$row['instructies'] = $this->parseLegacyInstructions( $legacy_instructions );
+		}
+
+		return $row;
 	}
 
 	private function getIngredients( int $recept_id ): array {
