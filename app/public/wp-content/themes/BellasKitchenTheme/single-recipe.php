@@ -93,12 +93,33 @@ $main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
 							</span>
 						<?php endif; ?>
 
-						<?php if ( $servings ) : ?>
-							<span class="inline-flex items-center rounded-full border border-rose-100 bg-white px-4 py-2 text-sm text-stone-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-								Aantal personen: <span class="ml-2 font-semibold"><?php echo esc_html( bellas_kitchen_format_recept_servings( $servings ) ); ?></span>
-							</span>
-						<?php endif; ?>
 					</div>
+
+					<?php if ( $servings ) : ?>
+						<div class="rounded-[1.5rem] border border-rose-100 bg-white/90 p-5 shadow-card dark:border-slate-700 dark:bg-slate-900/90" data-recipe-servings data-base-servings="<?php echo esc_attr( $servings ); ?>">
+							<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+								<div>
+									<p class="text-xs font-semibold uppercase tracking-[0.24em] text-rose-500">Porties aanpassen</p>
+									<p class="mt-2 flex items-baseline gap-2 text-stone-900 dark:text-slate-100">
+										<span class="font-display text-4xl leading-none" data-servings-count><?php echo esc_html( $servings ); ?></span>
+										<span class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500 dark:text-slate-300" data-servings-unit-label><?php echo esc_html( 1 === $servings ? 'persoon' : 'personen' ); ?></span>
+									</p>
+								</div>
+
+								<div class="inline-flex items-center rounded-full border border-rose-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+									<button type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-l-full text-xl font-semibold text-stone-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800" data-servings-decrease aria-label="Verlaag aantal personen">
+										<span aria-hidden="true">&minus;</span>
+									</button>
+									<div class="min-w-[5rem] px-4 text-center text-base font-semibold text-stone-900 dark:text-slate-100" data-servings-display>
+										<?php echo esc_html( $servings ); ?>
+									</div>
+									<button type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-r-full text-xl font-semibold text-stone-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800" data-servings-increase aria-label="Verhoog aantal personen">
+										<span aria-hidden="true">+</span>
+									</button>
+								</div>
+							</div>
+						</div>
+					<?php endif; ?>
 				</header>
 
 				<!-- Main Content Grid -->
@@ -106,22 +127,30 @@ $main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
 					<!-- Ingredients -->
 					<?php if ( is_array( $ingredients ) && ! empty( $ingredients ) ) : ?>
 						<section class="lg:col-span-1">
-							<h2 class="font-display text-2xl font-semibold text-stone-900 dark:text-slate-100">Ingrediënten</h2>
+							<div class="flex flex-col gap-2">
+								<h2 class="font-display text-2xl font-semibold text-stone-900 dark:text-slate-100">Ingrediënten</h2>
+								<?php if ( $servings ) : ?>
+									<p class="text-sm text-stone-600 dark:text-slate-300">Voor <span class="font-semibold text-stone-900 dark:text-slate-100" data-servings-summary><?php echo esc_html( bellas_kitchen_format_recept_servings( $servings ) ); ?></span></p>
+								<?php endif; ?>
+							</div>
 							<div class="mt-4 space-y-3 rounded-2xl border border-rose-100 bg-white/80 p-6 dark:border-slate-700 dark:bg-slate-900/90">
 								<ul class="space-y-3">
 									<?php foreach ( $ingredients as $ingredient ) : ?>
 										<?php
 										$quantity = trim( (string) ( $ingredient['quantity'] ?? '' ) );
-										$unit     = bellas_kitchen_format_recept_unit( (string) ( $ingredient['unit'] ?? '' ) );
+										$unit_key = (string) ( $ingredient['unit'] ?? '' );
+										$unit     = bellas_kitchen_format_recept_unit( $unit_key );
 										$amount   = trim( implode( ' ', array_filter( array( $quantity, $unit ) ) ) );
 										?>
-										<li class="flex items-start gap-3 text-stone-700 dark:text-slate-300">
+										<li class="flex items-start gap-3 text-stone-700 dark:text-slate-300" data-ingredient data-base-quantity="<?php echo esc_attr( $quantity ); ?>" data-base-unit-key="<?php echo esc_attr( $unit_key ); ?>" data-base-unit="<?php echo esc_attr( $unit ); ?>" data-base-amount="<?php echo esc_attr( $amount ); ?>">
 											<span class="mt-1 inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-rose-400"></span>
 											<div>
 												<?php if ( '' !== $amount ) : ?>
-													<span class="font-semibold">
+													<span class="font-semibold" data-ingredient-amount>
 														<?php echo esc_html( $amount ); ?>
 													</span>
+												<?php else : ?>
+													<span class="hidden font-semibold" data-ingredient-amount></span>
 												<?php endif; ?>
 												<span class="text-stone-600 dark:text-slate-300">
 													<?php echo esc_html( (string) ( $ingredient['item'] ?? '' ) ); ?>
