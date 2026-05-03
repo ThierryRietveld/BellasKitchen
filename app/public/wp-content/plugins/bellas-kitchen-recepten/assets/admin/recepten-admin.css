@@ -1,0 +1,159 @@
+/* Bella's Kitchen Recepten admin styles. */
+
+.bkr-recepten-admin .bkr-recepten-search {
+	margin: 12px 0;
+}
+
+.bkr-recepten-table .column-image {
+	width: 90px;
+}
+
+.bkr-recepten-thumb {
+	display: block;
+	width: 64px;
+	height: 64px;
+	max-width: 100%;
+	object-fit: cover;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f6f7f7;
+}
+
+.bkr-no-image {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 64px;
+	box-sizing: border-box;
+	border: 1px dashed #c3c4c7;
+	border-radius: 4px;
+	color: #646970;
+	font-size: 11px;
+	line-height: 1.2;
+	text-align: center;
+	background: #f6f7f7;
+}
+
+.bkr-form-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 300px;
+	gap: 24px;
+	align-items: start;
+	max-width: 1200px;
+}
+
+.bkr-form-main,
+.bkr-form-side {
+	min-width: 0;
+}
+
+.bkr-form-side .postbox {
+	min-width: 0;
+}
+
+.bkr-form-side .hndle {
+	margin: 0;
+	padding: 10px 12px;
+	border-bottom: 1px solid #c3c4c7;
+	font-size: 14px;
+}
+
+.bkr-form-side label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: 600;
+}
+
+.bkr-form-side select,
+.bkr-form-side input[type='number'] {
+	width: 100%;
+	max-width: 100%;
+}
+
+.bkr-foto-preview {
+	margin-bottom: 10px;
+}
+
+.bkr-foto-preview .bkr-recepten-thumb {
+	width: 100%;
+	height: auto;
+	max-height: 220px;
+}
+
+.bkr-ingredienten-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.bkr-ingredient-row {
+	display: grid;
+	grid-template-columns: 90px 150px minmax(180px, 1fr) auto;
+	gap: 8px;
+	align-items: center;
+	max-width: 820px;
+}
+
+.bkr-ingredient-row .bkr-ingredient-quantity,
+.bkr-ingredient-row .bkr-ingredient-unit,
+.bkr-ingredient-row .bkr-ingredient-item {
+	width: 100%;
+	max-width: 100%;
+}
+
+.bkr-instructies-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 8px;
+}
+
+.bkr-instruction-row {
+	display: grid;
+	grid-template-columns: 34px minmax(220px, 1fr) auto;
+	gap: 8px;
+	align-items: start;
+	max-width: 820px;
+}
+
+.bkr-instruction-number {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	margin-top: 4px;
+	border-radius: 50%;
+	background: #1d2327;
+	color: #fff;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1;
+}
+
+.bkr-instruction-row .bkr-instruction-text {
+	width: 100%;
+	max-width: 100%;
+	resize: vertical;
+}
+
+@media (max-width: 960px) {
+	.bkr-form-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.bkr-ingredient-row {
+		grid-template-columns: 1fr;
+	}
+
+	.bkr-instruction-row {
+		grid-template-columns: 34px minmax(0, 1fr);
+	}
+
+	.bkr-instruction-row .bkr-remove-instruction {
+		grid-column: 2;
+		justify-self: start;
+	}
+}

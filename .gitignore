@@ -24,6 +24,8 @@
 /app/public/wp-content/plugins/*
 !app/public/wp-content/plugins/bellas-kitchen-recipes/
 !/app/public/wp-content/plugins/bellas-kitchen-recipes/**
+!app/public/wp-content/plugins/bellas-kitchen-recepten/
+!/app/public/wp-content/plugins/bellas-kitchen-recepten/**
 
 # OS / misc
 .DS_Store
