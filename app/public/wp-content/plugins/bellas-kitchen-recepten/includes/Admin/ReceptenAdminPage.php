@@ -16,8 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 class ReceptenAdminPage {
 
 	private const MENU_SLUG = 'bellas-kitchen-recepten';
-	private const ADD_SLUG  = 'bellas-kitchen-recepten-add';
-	private const EDIT_SLUG = 'bellas-kitchen-recepten-edit';
+	private const ADD_SLUG      = 'bellas-kitchen-recepten-add';
+	private const TEMPLATE_SLUG = 'bellas-kitchen-recepten-template';
+	private const EDIT_SLUG     = 'bellas-kitchen-recepten-edit';
 
 	/**
 	 * @var ReceptRepository
@@ -32,6 +33,7 @@ class ReceptenAdminPage {
 		add_action( 'admin_menu', [ $this, 'registerMenu' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueueAssets' ] );
 		add_action( 'admin_post_bkr_save_recept', [ $this, 'handleSave' ] );
+		add_action( 'admin_post_bkr_import_recept_template', [ $this, 'handleTemplateImport' ] );
 		add_action( 'admin_post_bkr_delete_recept', [ $this, 'handleDelete' ] );
 	}
 
@@ -65,6 +67,15 @@ class ReceptenAdminPage {
 		);
 
 		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Voeg toe via template', 'bellas-kitchen-recepten' ),
+			__( 'Voeg toe via template', 'bellas-kitchen-recepten' ),
+			'manage_options',
+			self::TEMPLATE_SLUG,
+			[ $this, 'renderTemplatePage' ]
+		);
+
+		add_submenu_page(
 			'admin.php',
 			__( 'Recept bewerken', 'bellas-kitchen-recepten' ),
 			__( 'Recept bewerken', 'bellas-kitchen-recepten' ),
@@ -77,7 +88,7 @@ class ReceptenAdminPage {
 	public function enqueueAssets(): void {
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 
-		if ( ! in_array( $page, [ self::MENU_SLUG, self::ADD_SLUG, self::EDIT_SLUG ], true ) ) {
+		if ( ! in_array( $page, [ self::MENU_SLUG, self::ADD_SLUG, self::TEMPLATE_SLUG, self::EDIT_SLUG ], true ) ) {
 			return;
 		}
 
@@ -121,6 +132,9 @@ class ReceptenAdminPage {
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Recepten', 'bellas-kitchen-recepten' ); ?></h1>
 			<a href="<?php echo esc_url( $this->getAddUrl() ); ?>" class="page-title-action">
 				<?php esc_html_e( 'Nieuw recept', 'bellas-kitchen-recepten' ); ?>
+			</a>
+			<a href="<?php echo esc_url( $this->getTemplateAddUrl() ); ?>" class="page-title-action">
+				<?php esc_html_e( 'Voeg toe via template', 'bellas-kitchen-recepten' ); ?>
 			</a>
 
 			<?php $this->renderNotice(); ?>
@@ -166,6 +180,14 @@ class ReceptenAdminPage {
 
 	public function renderAddPage(): void {
 		$this->renderFormPage( $this->getEmptyRecept(), false );
+	}
+
+	public function renderTemplatePage(): void {
+		$flash_state = $this->consumeTemplateImportState();
+		$template    = is_array( $flash_state ) ? (string) ( $flash_state['template_input'] ?? '' ) : '';
+		$error       = is_array( $flash_state ) ? (string) ( $flash_state['error_message'] ?? '' ) : '';
+
+		$this->renderTemplateImportPage( $template, $error );
 	}
 
 	public function renderEditPage(): void {
@@ -232,6 +254,34 @@ class ReceptenAdminPage {
 		}
 
 		$this->redirectToOverview( 'deleted' );
+	}
+
+	public function handleTemplateImport(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Je hebt geen rechten om recepten te beheren.', 'bellas-kitchen-recepten' ) );
+		}
+
+		check_admin_referer( 'bkr_import_recept_template', 'bkr_template_nonce' );
+
+		$template_input = isset( $_POST['template_input'] ) ? (string) wp_unslash( $_POST['template_input'] ) : '';
+		$data           = $this->parseTemplateInput( $template_input );
+
+		if ( is_wp_error( $data ) ) {
+			$this->storeTemplateImportState( $template_input, $data->get_error_message() );
+			$this->redirectToTemplateAdd();
+		}
+
+		$recept_id = $this->repository->create( $data );
+
+		if ( $recept_id <= 0 ) {
+			$this->storeTemplateImportState(
+				$template_input,
+				__( 'Het recept kon niet worden opgeslagen op basis van deze template.', 'bellas-kitchen-recepten' )
+			);
+			$this->redirectToTemplateAdd();
+		}
+
+		$this->redirectToEdit( $recept_id, 'created' );
 	}
 
 	private function renderOverviewRow( array $recept ): void {
@@ -470,6 +520,66 @@ class ReceptenAdminPage {
 		<?php
 	}
 
+	private function renderTemplateImportPage( string $template_input = '', string $error_message = '' ): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Je hebt geen rechten om deze pagina te bekijken.', 'bellas-kitchen-recepten' ) );
+		}
+
+		$template_example = $this->getTemplateExample();
+		?>
+		<div class="wrap bkr-recepten-admin">
+			<h1><?php esc_html_e( 'Voeg toe via template', 'bellas-kitchen-recepten' ); ?></h1>
+			<p><?php esc_html_e( 'Plak hieronder een volledig recept als tekst. De foto wordt genegeerd, de rest van het recept wordt direct aangemaakt.', 'bellas-kitchen-recepten' ); ?></p>
+
+			<?php if ( '' !== $error_message ) : ?>
+				<div class="notice notice-error">
+					<p><?php echo esc_html( $error_message ); ?></p>
+				</div>
+			<?php endif; ?>
+
+			<div class="bkr-template-layout">
+				<div class="bkr-template-editor">
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<input type="hidden" name="action" value="bkr_import_recept_template">
+						<?php wp_nonce_field( 'bkr_import_recept_template', 'bkr_template_nonce' ); ?>
+
+						<div class="postbox">
+							<h2 class="hndle"><?php esc_html_e( 'Template invoer', 'bellas-kitchen-recepten' ); ?></h2>
+							<div class="inside">
+								<textarea id="bkr-template-input" name="template_input" rows="26" class="large-text code bkr-template-input" spellcheck="false"><?php echo esc_textarea( $template_input ); ?></textarea>
+								<p class="description"><?php esc_html_e( 'Gebruik de blokken uit het voorbeeld. Je kunt de waardes gewoon vervangen door je eigen recept.', 'bellas-kitchen-recepten' ); ?></p>
+							</div>
+						</div>
+
+						<p class="submit">
+							<button type="submit" class="button button-primary"><?php esc_html_e( 'Recept aanmaken', 'bellas-kitchen-recepten' ); ?></button>
+							<a href="<?php echo esc_url( $this->getOverviewUrl() ); ?>" class="button"><?php esc_html_e( 'Annuleren', 'bellas-kitchen-recepten' ); ?></a>
+						</p>
+					</form>
+				</div>
+
+				<div class="bkr-template-sidebar">
+					<div class="postbox">
+						<h2 class="hndle"><?php esc_html_e( 'Template voorbeeld', 'bellas-kitchen-recepten' ); ?></h2>
+						<div class="inside">
+							<pre class="bkr-template-example"><code><?php echo esc_html( $template_example ); ?></code></pre>
+						</div>
+					</div>
+
+					<div class="postbox">
+						<h2 class="hndle"><?php esc_html_e( 'Geldige waardes', 'bellas-kitchen-recepten' ); ?></h2>
+						<div class="inside">
+							<p><strong><?php esc_html_e( 'Moeilijkheid:', 'bellas-kitchen-recepten' ); ?></strong> <?php echo esc_html( implode( ', ', array_keys( $this->getDifficulties() ) ) ); ?></p>
+							<p><strong><?php esc_html_e( 'Soort gerecht:', 'bellas-kitchen-recepten' ); ?></strong> <?php echo esc_html( implode( ', ', array_keys( $this->getMealTypes() ) ) ); ?></p>
+							<p><strong><?php esc_html_e( 'Eenheden:', 'bellas-kitchen-recepten' ); ?></strong> <?php echo esc_html( implode( ', ', array_filter( array_keys( $this->getUnits() ) ) ) ); ?></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
 	private function sanitizePostData(): array {
 		$difficulty = isset( $_POST['moeilijkheid'] ) ? sanitize_key( wp_unslash( $_POST['moeilijkheid'] ) ) : 'makkelijk';
 		$meal_type  = isset( $_POST['soort_gerecht'] ) ? sanitize_key( wp_unslash( $_POST['soort_gerecht'] ) ) : 'diner';
@@ -493,6 +603,302 @@ class ReceptenAdminPage {
 			'moeilijkheid'    => $difficulty,
 			'soort_gerecht'   => $meal_type,
 		];
+	}
+
+	private function parseTemplateInput( string $template_input ) {
+		$template_input = trim( $template_input );
+
+		if ( '' === $template_input ) {
+			return new \WP_Error(
+				'template-empty',
+				__( 'Plak eerst een template voordat je het recept aanmaakt.', 'bellas-kitchen-recepten' )
+			);
+		}
+
+		$naam              = $this->extractTemplateTagValue( $template_input, [ 'Naam', 'Name', 'Title' ] );
+		$beschrijving      = $this->extractTemplateTagValue( $template_input, [ 'Beschrijving', 'Description' ] );
+		$aantal_personen   = $this->extractTemplateTagValue( $template_input, [ 'AantalPersonen', 'Servings', 'Personen' ] );
+		$bereidingstijd    = $this->extractTemplateTagValue( $template_input, [ 'Bereidingstijd', 'Time', 'PreparationTime' ] );
+		$moeilijkheid_raw  = $this->extractTemplateTagValue( $template_input, [ 'Moeilijkheid', 'Difficulty' ] );
+		$soort_gerecht_raw = $this->extractTemplateTagValue( $template_input, [ 'SoortGerecht', 'MealType' ] );
+		$ingredienten      = $this->parseTemplateIngredients( $template_input );
+		$instructies       = $this->parseTemplateInstructions( $template_input );
+
+		if ( '' === $naam ) {
+			return new \WP_Error(
+				'template-missing-name',
+				__( 'De template moet minstens een [Naam] of [Name] blok bevatten.', 'bellas-kitchen-recepten' )
+			);
+		}
+
+		if ( is_wp_error( $ingredienten ) ) {
+			return $ingredienten;
+		}
+
+		if ( is_wp_error( $instructies ) ) {
+			return $instructies;
+		}
+
+		$moeilijkheid = $this->normalizeTemplateDifficulty( $moeilijkheid_raw );
+
+		if ( is_wp_error( $moeilijkheid ) ) {
+			return $moeilijkheid;
+		}
+
+		$soort_gerecht = $this->normalizeTemplateMealType( $soort_gerecht_raw );
+
+		if ( is_wp_error( $soort_gerecht ) ) {
+			return $soort_gerecht;
+		}
+
+		return [
+			'naam'            => sanitize_text_field( $naam ),
+			'beschrijving'    => sanitize_textarea_field( $beschrijving ),
+			'foto_id'         => 0,
+			'ingredienten'    => $ingredienten,
+			'instructies'     => $instructies,
+			'aantal_personen' => absint( $aantal_personen ),
+			'bereidingstijd'  => absint( $bereidingstijd ),
+			'moeilijkheid'    => $moeilijkheid,
+			'soort_gerecht'   => $soort_gerecht,
+		];
+	}
+
+	private function parseTemplateIngredients( string $template_input ) {
+		$ingredienten_block = $this->extractTemplateTagValue( $template_input, [ 'Ingredienten', 'Ingredients' ] );
+
+		if ( '' === $ingredienten_block ) {
+			return [];
+		}
+
+		$ingredient_lines = $this->extractTemplateTagValues( $ingredienten_block, [ 'Ingredient' ] );
+
+		if ( empty( $ingredient_lines ) ) {
+			$ingredient_lines = preg_split( '/\r\n|\r|\n/', $ingredienten_block );
+		}
+
+		$ingredienten = [];
+
+		foreach ( $ingredient_lines as $ingredient_line ) {
+			$ingredient = $this->parseTemplateIngredientEntry( $ingredient_line );
+
+			if ( null === $ingredient ) {
+				continue;
+			}
+
+			$ingredienten[] = $ingredient;
+		}
+
+		return $ingredienten;
+	}
+
+	private function parseTemplateInstructions( string $template_input ) {
+		$stappen_block = $this->extractTemplateTagValue( $template_input, [ 'Stappen', 'Steps', 'Instructions' ] );
+
+		if ( '' === $stappen_block ) {
+			return [];
+		}
+
+		$step_lines = $this->extractTemplateTagValues( $stappen_block, [ 'Stap', 'Step' ] );
+
+		if ( empty( $step_lines ) ) {
+			$step_lines = preg_split( '/\r\n|\r|\n/', $stappen_block );
+		}
+
+		$instructies = [];
+
+		foreach ( $step_lines as $step_line ) {
+			$text = $this->sanitizeInstructionTextValue( trim( $step_line ) );
+
+			if ( '' === $text ) {
+				continue;
+			}
+
+			$instructies[] = [ 'text' => $text ];
+		}
+
+		return $instructies;
+	}
+
+	private function parseTemplateIngredientEntry( string $ingredient_line ): ?array {
+		$ingredient_line = trim( $ingredient_line );
+
+		if ( '' === $ingredient_line ) {
+			return null;
+		}
+
+		if ( false !== strpos( $ingredient_line, '|' ) ) {
+			$parts = array_map( 'trim', explode( '|', $ingredient_line, 3 ) );
+
+			if ( 3 === count( $parts ) ) {
+				$quantity = $this->sanitizeIngredientTextValue( $parts[0] );
+				$unit     = $this->sanitizeIngredientKeyValue( $parts[1] );
+				$item     = $this->sanitizeIngredientTextValue( $parts[2] );
+
+				if ( ! array_key_exists( $unit, $this->getUnits() ) ) {
+					$item = $this->sanitizeIngredientTextValue( trim( $parts[1] . ' ' . $parts[2] ) );
+					$unit = '';
+				}
+
+				if ( '' === $item ) {
+					return null;
+				}
+
+				return [
+					'quantity' => $quantity,
+					'unit'     => $unit,
+					'item'     => $item,
+				];
+			}
+
+			if ( 2 === count( $parts ) ) {
+				$item = $this->sanitizeIngredientTextValue( $parts[1] );
+
+				if ( '' === $item ) {
+					return null;
+				}
+
+				return [
+					'quantity' => $this->sanitizeIngredientTextValue( $parts[0] ),
+					'unit'     => '',
+					'item'     => $item,
+				];
+			}
+		}
+
+		$parsed = $this->parseIngredientLine( $ingredient_line );
+
+		if ( '' !== $parsed['quantity'] || '' !== $parsed['unit'] || $parsed['item'] !== $ingredient_line ) {
+			return $parsed;
+		}
+
+		if ( preg_match( '/^(\S+)\s+(.+)$/', $ingredient_line, $matches ) ) {
+			return [
+				'quantity' => $this->sanitizeIngredientTextValue( $matches[1] ),
+				'unit'     => '',
+				'item'     => $this->sanitizeIngredientTextValue( $matches[2] ),
+			];
+		}
+
+		return [
+			'quantity' => '',
+			'unit'     => '',
+			'item'     => $this->sanitizeIngredientTextValue( $ingredient_line ),
+		];
+	}
+
+	private function normalizeTemplateDifficulty( string $value ) {
+		$value = sanitize_key( $value );
+
+		if ( '' === $value ) {
+			return 'makkelijk';
+		}
+
+		$map = [
+			'makkelijk' => 'makkelijk',
+			'easy'      => 'makkelijk',
+			'gemiddeld' => 'gemiddeld',
+			'medium'    => 'gemiddeld',
+			'moeilijk'  => 'moeilijk',
+			'hard'      => 'moeilijk',
+		];
+
+		if ( isset( $map[ $value ] ) ) {
+			return $map[ $value ];
+		}
+
+		return new \WP_Error(
+			'template-invalid-difficulty',
+			__( 'Onbekende moeilijkheid in de template. Gebruik makkelijk, gemiddeld of moeilijk.', 'bellas-kitchen-recepten' )
+		);
+	}
+
+	private function normalizeTemplateMealType( string $value ) {
+		$value = sanitize_key( $value );
+
+		if ( '' === $value ) {
+			return 'diner';
+		}
+
+		$map = [
+			'ontbijt'       => 'ontbijt',
+			'breakfast'     => 'ontbijt',
+			'lunch'         => 'lunch',
+			'diner'         => 'diner',
+			'dinner'        => 'diner',
+			'bijgerecht'    => 'bijgerecht',
+			'side'          => 'bijgerecht',
+			'side_dish'     => 'bijgerecht',
+			'tussendoortje' => 'tussendoortje',
+			'snack'         => 'tussendoortje',
+			'dessert'       => 'dessert',
+			'drankje'       => 'drankje',
+			'drink'         => 'drankje',
+			'drinks'        => 'drankje',
+		];
+
+		if ( isset( $map[ $value ] ) ) {
+			return $map[ $value ];
+		}
+
+		return new \WP_Error(
+			'template-invalid-meal-type',
+			__( 'Onbekend soort gerecht in de template. Gebruik bijvoorbeeld ontbijt, lunch, diner, bijgerecht, tussendoortje, dessert of drankje.', 'bellas-kitchen-recepten' )
+		);
+	}
+
+	private function extractTemplateTagValue( string $template_input, array $tag_names ): string {
+		foreach ( $tag_names as $tag_name ) {
+			if ( preg_match( '/\[' . preg_quote( $tag_name, '/' ) . '\](.*?)\[\/' . preg_quote( $tag_name, '/' ) . '\]/is', $template_input, $matches ) ) {
+				return trim( (string) $matches[1] );
+			}
+		}
+
+		return '';
+	}
+
+	private function extractTemplateTagValues( string $template_input, array $tag_names ): array {
+		foreach ( $tag_names as $tag_name ) {
+			if ( preg_match_all( '/\[' . preg_quote( $tag_name, '/' ) . '\](.*?)\[\/' . preg_quote( $tag_name, '/' ) . '\]/is', $template_input, $matches ) ) {
+				return array_map(
+					static function ( $value ) {
+						return trim( (string) $value );
+					},
+					$matches[1]
+				);
+			}
+		}
+
+		return [];
+	}
+
+	private function getTemplateExample(): string {
+		return implode(
+			"\n",
+			[
+				'[Naam]Pasta met spinazie en room[/Naam]',
+				'[Beschrijving]Een snelle doordeweekse pasta met veel smaak.[/Beschrijving]',
+				'[AantalPersonen]4[/AantalPersonen]',
+				'[Bereidingstijd]25[/Bereidingstijd]',
+				'[Moeilijkheid]makkelijk[/Moeilijkheid]',
+				'[SoortGerecht]diner[/SoortGerecht]',
+				'[Ingredienten]',
+				'2 | el | olijfolie',
+				'1 | | ui',
+				'2 | stuks | knoflooktenen',
+				'250 | g | pasta',
+				'200 | ml | kookroom',
+				'150 | g | spinazie',
+				'naar smaak | | peper en zout',
+				'[/Ingredienten]',
+				'[Stappen]',
+				'Fruit de ui en knoflook in de olie.',
+				'Kook de pasta gaar volgens de verpakking.',
+				'Voeg de room en spinazie toe en laat kort slinken.',
+				'Meng alles met de pasta en breng op smaak.',
+				'[/Stappen]',
+			]
+		);
 	}
 
 	private function sanitizeIngredients(): array {
@@ -848,6 +1254,10 @@ class ReceptenAdminPage {
 		return admin_url( 'admin.php?page=' . self::ADD_SLUG );
 	}
 
+	private function getTemplateAddUrl(): string {
+		return admin_url( 'admin.php?page=' . self::TEMPLATE_SLUG );
+	}
+
 	private function getEditUrl( int $id ): string {
 		return add_query_arg(
 			[
@@ -866,6 +1276,44 @@ class ReceptenAdminPage {
 			)
 		);
 		exit;
+	}
+
+	private function redirectToEdit( int $id, string $message ): void {
+		wp_safe_redirect(
+			add_query_arg(
+				[ 'message' => $message ],
+				$this->getEditUrl( $id )
+			)
+		);
+		exit;
+	}
+
+	private function redirectToTemplateAdd(): void {
+		wp_safe_redirect( $this->getTemplateAddUrl() );
+		exit;
+	}
+
+	private function storeTemplateImportState( string $template_input, string $error_message ): void {
+		set_transient(
+			$this->getTemplateImportStateKey(),
+			[
+				'template_input' => $template_input,
+				'error_message'  => $error_message,
+			],
+			5 * MINUTE_IN_SECONDS
+		);
+	}
+
+	private function consumeTemplateImportState(): array {
+		$state = get_transient( $this->getTemplateImportStateKey() );
+
+		delete_transient( $this->getTemplateImportStateKey() );
+
+		return is_array( $state ) ? $state : [];
+	}
+
+	private function getTemplateImportStateKey(): string {
+		return 'bkr_template_import_state_' . get_current_user_id();
 	}
 
 	private function redirectToForm( int $id, string $message ): void {

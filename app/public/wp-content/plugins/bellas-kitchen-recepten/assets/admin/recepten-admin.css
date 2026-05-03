@@ -139,8 +139,44 @@
 	resize: vertical;
 }
 
+.bkr-template-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
+	gap: 24px;
+	align-items: start;
+	max-width: 1280px;
+}
+
+.bkr-template-editor,
+.bkr-template-sidebar {
+	min-width: 0;
+}
+
+.bkr-template-input {
+	min-height: 540px;
+	font-family: Consolas, Monaco, monospace;
+	line-height: 1.5;
+}
+
+.bkr-template-example {
+	margin: 0;
+	padding: 16px;
+	overflow: auto;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f6f7f7;
+	font-family: Consolas, Monaco, monospace;
+	font-size: 13px;
+	line-height: 1.6;
+	white-space: pre-wrap;
+}
+
 @media (max-width: 960px) {
 	.bkr-form-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.bkr-template-layout {
 		grid-template-columns: 1fr;
 	}
 
