@@ -108,4 +108,99 @@ jQuery( function ( $ ) {
 
 		rows.find( 'textarea' ).val( '' );
 	} );
+
+	function setTemplateGenerationStatus( type, message ) {
+		var $status = $( '#bkr-template-generation-status' );
+
+		if ( ! $status.length ) {
+			return;
+		}
+
+		$status
+			.removeClass( 'notice-success notice-error notice-info' )
+			.addClass( 'notice-' + type )
+			.prop( 'hidden', false )
+			.find( 'p' )
+			.text( message );
+	}
+
+	function clearTemplateGenerationStatus() {
+		var $status = $( '#bkr-template-generation-status' );
+
+		if ( ! $status.length ) {
+			return;
+		}
+
+		$status
+			.removeClass( 'notice-success notice-error notice-info' )
+			.prop( 'hidden', true )
+			.find( 'p' )
+			.text( '' );
+	}
+
+	$( document ).on( 'click', '#bkr-generate-template', function () {
+		var $button = $( this );
+		var $urlInput = $( '#bkr-template-source-url' );
+		var $textarea = $( '#bkr-template-input' );
+		var $spinner = $( '#bkr-template-generate-spinner' );
+		var url = $.trim( $urlInput.val() );
+		var existingValue = $.trim( $textarea.val() );
+
+		if ( ! url ) {
+			setTemplateGenerationStatus( 'error', bkrReceptenAdmin.missingUrlText );
+			$urlInput.trigger( 'focus' );
+			return;
+		}
+
+		if ( existingValue && ! window.confirm( bkrReceptenAdmin.confirmReplaceText ) ) {
+			return;
+		}
+
+		clearTemplateGenerationStatus();
+		setTemplateGenerationStatus( 'info', bkrReceptenAdmin.generatingText );
+
+		$button.prop( 'disabled', true );
+		$urlInput.prop( 'disabled', true );
+		$spinner.addClass( 'is-active' );
+
+		$.ajax( {
+			url: bkrReceptenAdmin.ajaxUrl,
+			type: 'POST',
+			dataType: 'json',
+			data: {
+				action: 'bkr_generate_template_from_url',
+				nonce: bkrReceptenAdmin.generateTemplateNonce,
+				source_url: url,
+			},
+		} )
+			.done( function ( response ) {
+				if ( response && response.success && response.data && response.data.template ) {
+					$textarea.val( response.data.template ).trigger( 'focus' );
+					setTemplateGenerationStatus( 'success', bkrReceptenAdmin.generatedText );
+					return;
+				}
+
+				if ( response && response.data && response.data.message ) {
+					setTemplateGenerationStatus( 'error', response.data.message );
+					return;
+				}
+
+				setTemplateGenerationStatus( 'error', bkrReceptenAdmin.requestFailedText );
+			} )
+			.fail( function ( jqXHR ) {
+				var response = jqXHR.responseJSON;
+
+				if ( response && response.data && response.data.message ) {
+					setTemplateGenerationStatus( 'error', response.data.message );
+					return;
+				}
+
+				setTemplateGenerationStatus( 'error', bkrReceptenAdmin.requestFailedText );
+			} )
+			.always( function () {
+				$button.prop( 'disabled', false );
+				$urlInput.prop( 'disabled', false );
+				$spinner.removeClass( 'is-active' );
+			} );
+	} );
 } );

@@ -152,10 +152,41 @@
 	min-width: 0;
 }
 
+.bkr-settings-box {
+	max-width: 760px;
+}
+
 .bkr-template-input {
 	min-height: 540px;
 	font-family: Consolas, Monaco, monospace;
 	line-height: 1.5;
+}
+
+.bkr-template-url-bar {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	gap: 12px;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.bkr-template-url-bar input[type='url'] {
+	width: 100%;
+	max-width: 100%;
+}
+
+.bkr-template-url-bar .spinner {
+	float: none;
+	margin: 0;
+}
+
+.bkr-template-inline-notice {
+	margin: 10px 0 0;
+	color: #b32d2e;
+}
+
+#bkr-template-generation-status {
+	margin: 12px 0 0;
 }
 
 .bkr-template-example {
@@ -177,6 +208,10 @@
 	}
 
 	.bkr-template-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.bkr-template-url-bar {
 		grid-template-columns: 1fr;
 	}
 

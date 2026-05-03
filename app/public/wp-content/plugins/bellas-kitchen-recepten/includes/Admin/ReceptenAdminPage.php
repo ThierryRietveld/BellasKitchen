@@ -7,6 +7,7 @@
 
 namespace BellasKitchenRecepten\Admin;
 
+use BellasKitchenRecepten\AI\OpenAIRecipeUrlParser;
 use BellasKitchenRecepten\Database\ReceptRepository;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -18,6 +19,7 @@ class ReceptenAdminPage {
 	private const MENU_SLUG = 'bellas-kitchen-recepten';
 	private const ADD_SLUG      = 'bellas-kitchen-recepten-add';
 	private const TEMPLATE_SLUG = 'bellas-kitchen-recepten-template';
+	private const SETTINGS_SLUG = 'bellas-kitchen-recepten-settings';
 	private const EDIT_SLUG     = 'bellas-kitchen-recepten-edit';
 
 	/**
@@ -25,8 +27,14 @@ class ReceptenAdminPage {
 	 */
 	private $repository;
 
-	public function __construct( ReceptRepository $repository ) {
-		$this->repository = $repository;
+	/**
+	 * @var OpenAIRecipeUrlParser
+	 */
+	private $recipe_url_parser;
+
+	public function __construct( ReceptRepository $repository, OpenAIRecipeUrlParser $recipe_url_parser ) {
+		$this->repository        = $repository;
+		$this->recipe_url_parser = $recipe_url_parser;
 	}
 
 	public function register(): void {
@@ -34,7 +42,9 @@ class ReceptenAdminPage {
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueueAssets' ] );
 		add_action( 'admin_post_bkr_save_recept', [ $this, 'handleSave' ] );
 		add_action( 'admin_post_bkr_import_recept_template', [ $this, 'handleTemplateImport' ] );
+		add_action( 'admin_post_bkr_save_openai_settings', [ $this, 'handleSaveSettings' ] );
 		add_action( 'admin_post_bkr_delete_recept', [ $this, 'handleDelete' ] );
+		add_action( 'wp_ajax_bkr_generate_template_from_url', [ $this, 'handleGenerateTemplateFromUrl' ] );
 	}
 
 	public function registerMenu(): void {
@@ -76,6 +86,15 @@ class ReceptenAdminPage {
 		);
 
 		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Instellingen', 'bellas-kitchen-recepten' ),
+			__( 'Instellingen', 'bellas-kitchen-recepten' ),
+			'manage_options',
+			self::SETTINGS_SLUG,
+			[ $this, 'renderSettingsPage' ]
+		);
+
+		add_submenu_page(
 			'admin.php',
 			__( 'Recept bewerken', 'bellas-kitchen-recepten' ),
 			__( 'Recept bewerken', 'bellas-kitchen-recepten' ),
@@ -88,7 +107,7 @@ class ReceptenAdminPage {
 	public function enqueueAssets(): void {
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 
-		if ( ! in_array( $page, [ self::MENU_SLUG, self::ADD_SLUG, self::TEMPLATE_SLUG, self::EDIT_SLUG ], true ) ) {
+		if ( ! in_array( $page, [ self::MENU_SLUG, self::ADD_SLUG, self::TEMPLATE_SLUG, self::SETTINGS_SLUG, self::EDIT_SLUG ], true ) ) {
 			return;
 		}
 
@@ -113,9 +132,16 @@ class ReceptenAdminPage {
 			'bkr-recepten-admin',
 			'bkrReceptenAdmin',
 			[
-				'mediaTitle'  => __( 'Kies een foto', 'bellas-kitchen-recepten' ),
-				'mediaButton' => __( 'Gebruik deze foto', 'bellas-kitchen-recepten' ),
-				'noImageText' => __( 'Geen foto', 'bellas-kitchen-recepten' ),
+				'ajaxUrl'               => admin_url( 'admin-ajax.php' ),
+				'generateTemplateNonce' => wp_create_nonce( 'bkr_generate_template_from_url' ),
+				'mediaTitle'            => __( 'Kies een foto', 'bellas-kitchen-recepten' ),
+				'mediaButton'           => __( 'Gebruik deze foto', 'bellas-kitchen-recepten' ),
+				'noImageText'           => __( 'Geen foto', 'bellas-kitchen-recepten' ),
+				'confirmReplaceText'    => __( 'De huidige template-invoer wordt vervangen. Wil je doorgaan?', 'bellas-kitchen-recepten' ),
+				'missingUrlText'        => __( 'Vul eerst een URL in naar een online recept.', 'bellas-kitchen-recepten' ),
+				'generatingText'        => __( 'De receptpagina wordt via ChatGPT verwerkt...', 'bellas-kitchen-recepten' ),
+				'generatedText'         => __( 'De template is toegevoegd aan het invoerveld.', 'bellas-kitchen-recepten' ),
+				'requestFailedText'     => __( 'De template kon niet worden opgehaald. Probeer het opnieuw.', 'bellas-kitchen-recepten' ),
 			]
 		);
 	}
@@ -188,6 +214,66 @@ class ReceptenAdminPage {
 		$error       = is_array( $flash_state ) ? (string) ( $flash_state['error_message'] ?? '' ) : '';
 
 		$this->renderTemplateImportPage( $template, $error );
+	}
+
+	public function renderSettingsPage(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Je hebt geen rechten om deze pagina te bekijken.', 'bellas-kitchen-recepten' ) );
+		}
+
+		$api_key = $this->recipe_url_parser->getApiKey();
+		?>
+		<div class="wrap bkr-recepten-admin">
+			<h1><?php esc_html_e( 'OpenAI instellingen', 'bellas-kitchen-recepten' ); ?></h1>
+			<p><?php esc_html_e( 'Voeg hier je OpenAI API-sleutel toe voor de URL-naar-template import op de receptenpagina.', 'bellas-kitchen-recepten' ); ?></p>
+
+			<?php $this->renderNotice(); ?>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="bkr-settings-form">
+				<input type="hidden" name="action" value="bkr_save_openai_settings">
+				<?php wp_nonce_field( 'bkr_save_openai_settings', 'bkr_openai_settings_nonce' ); ?>
+
+				<div class="postbox bkr-settings-box">
+					<h2 class="hndle"><?php esc_html_e( 'API sleutel', 'bellas-kitchen-recepten' ); ?></h2>
+					<div class="inside">
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><label for="bkr-openai-api-key"><?php esc_html_e( 'OpenAI API key', 'bellas-kitchen-recepten' ); ?></label></th>
+									<td>
+										<input type="password" id="bkr-openai-api-key" name="openai_api_key" class="regular-text code" value="" autocomplete="new-password" spellcheck="false">
+										<?php if ( '' !== $api_key ) : ?>
+											<p class="description">
+												<?php
+												printf(
+													/* translators: %s: masked API key. */
+													esc_html__( 'Er is al een sleutel opgeslagen (%s). Laat dit veld leeg om die te behouden, of vul een nieuwe sleutel in om die te vervangen.', 'bellas-kitchen-recepten' ),
+													esc_html( $this->maskApiKey( $api_key ) )
+												);
+												?>
+											</p>
+											<p>
+												<label for="bkr-openai-api-key-clear">
+													<input type="checkbox" id="bkr-openai-api-key-clear" name="openai_api_key_clear" value="1">
+													<?php esc_html_e( 'Verwijder de opgeslagen API-sleutel', 'bellas-kitchen-recepten' ); ?>
+												</label>
+											</p>
+										<?php else : ?>
+											<p class="description"><?php esc_html_e( 'Plak hier je OpenAI API-sleutel. Deze wordt alleen gebruikt voor de template-import via URL.', 'bellas-kitchen-recepten' ); ?></p>
+										<?php endif; ?>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<p class="submit">
+					<button type="submit" class="button button-primary"><?php esc_html_e( 'Instellingen opslaan', 'bellas-kitchen-recepten' ); ?></button>
+				</p>
+			</form>
+		</div>
+		<?php
 	}
 
 	public function renderEditPage(): void {
@@ -282,6 +368,69 @@ class ReceptenAdminPage {
 		}
 
 		$this->redirectToEdit( $recept_id, 'created' );
+	}
+
+	public function handleSaveSettings(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Je hebt geen rechten om deze instellingen op te slaan.', 'bellas-kitchen-recepten' ) );
+		}
+
+		check_admin_referer( 'bkr_save_openai_settings', 'bkr_openai_settings_nonce' );
+
+		$clear_api_key = isset( $_POST['openai_api_key_clear'] ) && '1' === wp_unslash( $_POST['openai_api_key_clear'] );
+		$api_key       = isset( $_POST['openai_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['openai_api_key'] ) ) : '';
+
+		if ( $clear_api_key ) {
+			$this->recipe_url_parser->clearApiKey();
+			$this->redirectToSettings( 'settings-saved' );
+		}
+
+		if ( '' !== $api_key ) {
+			$this->recipe_url_parser->updateApiKey( $api_key );
+		}
+
+		$this->redirectToSettings( 'settings-saved' );
+	}
+
+	public function handleGenerateTemplateFromUrl(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'Je hebt geen rechten om deze actie uit te voeren.', 'bellas-kitchen-recepten' ),
+				],
+				403
+			);
+		}
+
+		check_ajax_referer( 'bkr_generate_template_from_url', 'nonce' );
+
+		$source_url = isset( $_POST['source_url'] ) ? esc_url_raw( trim( (string) wp_unslash( $_POST['source_url'] ) ) ) : '';
+
+		if ( '' === $source_url || ! wp_http_validate_url( $source_url ) ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'Voer een geldige URL in naar een online recept.', 'bellas-kitchen-recepten' ),
+				],
+				400
+			);
+		}
+
+		$template = $this->recipe_url_parser->generateTemplateFromUrl( $source_url );
+
+		if ( is_wp_error( $template ) ) {
+			wp_send_json_error(
+				[
+					'message' => $template->get_error_message(),
+				],
+				500
+			);
+		}
+
+		wp_send_json_success(
+			[
+				'template' => $template,
+			]
+		);
 	}
 
 	private function renderOverviewRow( array $recept ): void {
@@ -526,6 +675,7 @@ class ReceptenAdminPage {
 		}
 
 		$template_example = $this->getTemplateExample();
+		$has_api_key      = $this->recipe_url_parser->hasApiKey();
 		?>
 		<div class="wrap bkr-recepten-admin">
 			<h1><?php esc_html_e( 'Voeg toe via template', 'bellas-kitchen-recepten' ); ?></h1>
@@ -539,6 +689,40 @@ class ReceptenAdminPage {
 
 			<div class="bkr-template-layout">
 				<div class="bkr-template-editor">
+					<div class="postbox">
+						<h2 class="hndle"><?php esc_html_e( 'Haal op via URL', 'bellas-kitchen-recepten' ); ?></h2>
+						<div class="inside">
+							<div class="bkr-template-url-bar">
+								<input type="url" id="bkr-template-source-url" class="regular-text code" value="" placeholder="https://voorbeeld.nl/recept/..." inputmode="url" spellcheck="false">
+								<button type="button" id="bkr-generate-template" class="button" <?php disabled( ! $has_api_key ); ?>>
+									<?php esc_html_e( 'Ophalen met ChatGPT', 'bellas-kitchen-recepten' ); ?>
+								</button>
+								<span id="bkr-template-generate-spinner" class="spinner" aria-hidden="true"></span>
+							</div>
+							<p class="description"><?php esc_html_e( 'Plak een URL van een online recept en laat ChatGPT de template hieronder invullen. Daarna kun je de tekst nog controleren voordat je het recept opslaat.', 'bellas-kitchen-recepten' ); ?></p>
+							<?php if ( ! $has_api_key ) : ?>
+								<p class="bkr-template-inline-notice">
+									<?php
+									printf(
+										wp_kses(
+											__( 'Voeg eerst een OpenAI API-sleutel toe op de <a href="%s">instellingenpagina</a>.', 'bellas-kitchen-recepten' ),
+											[
+												'a' => [
+													'href' => [],
+												],
+											]
+										),
+										esc_url( $this->getSettingsUrl() )
+									);
+									?>
+								</p>
+							<?php endif; ?>
+							<div id="bkr-template-generation-status" class="notice inline" hidden>
+								<p></p>
+							</div>
+						</div>
+					</div>
+
 					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 						<input type="hidden" name="action" value="bkr_import_recept_template">
 						<?php wp_nonce_field( 'bkr_import_recept_template', 'bkr_template_nonce' ); ?>
@@ -876,28 +1060,59 @@ class ReceptenAdminPage {
 		return implode(
 			"\n",
 			[
-				'[Naam]Pasta met spinazie en room[/Naam]',
-				'[Beschrijving]Een snelle doordeweekse pasta met veel smaak.[/Beschrijving]',
-				'[AantalPersonen]4[/AantalPersonen]',
-				'[Bereidingstijd]25[/Bereidingstijd]',
-				'[Moeilijkheid]makkelijk[/Moeilijkheid]',
-				'[SoortGerecht]diner[/SoortGerecht]',
-				'[Ingredienten]',
-				'2 | el | olijfolie',
-				'1 | | ui',
-				'2 | stuks | knoflooktenen',
-				'250 | g | pasta',
-				'200 | ml | kookroom',
-				'150 | g | spinazie',
-				'naar smaak | | peper en zout',
-				'[/Ingredienten]',
-				'[Stappen]',
-				'Fruit de ui en knoflook in de olie.',
-				'Kook de pasta gaar volgens de verpakking.',
-				'Voeg de room en spinazie toe en laat kort slinken.',
-				'Meng alles met de pasta en breng op smaak.',
-				'[/Stappen]',
-			]
+'You are a recipe parser.',
+'I will give you a URL to a recipe page. Your task is to extract the recipe EXACTLY as written on the page and convert it into the template format below.',
+'IMPORTANT RULES:',
+'Do NOT invent, simplify, or approximate anything.',
+'Only use information explicitly present on the page.',
+'If something is missing on the page, leave it empty or omit it (do not guess).',
+'Keep ingredient quantities, units, and names as written, but normalize units to the allowed list where possible.',
+'Keep the number of steps and their meaning exactly the same (you may split or merge slightly only if needed for clarity, but do not change content).',
+'Do not add extra explanations outside the template.',
+
+'Allowed values: Moeilijkheid: makkelijk, gemiddeld, moeilijk SoortGerecht: ontbijt, lunch, diner, bijgerecht, tussendoortje, dessert, drankje Eenheden: ml, l, g, kg, tl, el, snufje, stuks, naar_smaak',
+'Template: ',
+
+'[Naam][/Naam]',
+'[Beschrijving][/Beschrijving]',
+'[AantalPersonen][/AantalPersonen]',
+'[Bereidingstijd][/Bereidingstijd]',
+'[Moeilijkheid][/Moeilijkheid]',
+'[SoortGerecht][/SoortGerecht]',
+'[Ingredienten] hoeveelheid | eenheid | ingrediënt [/Ingredienten]',
+'[Stappen] stap [/Stappen]',
+
+'Example template:',
+'[Naam]Pasta met spinazie en room[/Naam]',
+'[Beschrijving]Een snelle doordeweekse pasta met veel smaak.[/Beschrijving]',
+'[AantalPersonen]4[/AantalPersonen]',
+'[Bereidingstijd]25[/Bereidingstijd]',
+'[Moeilijkheid]makkelijk[/Moeilijkheid]',
+'[SoortGerecht]diner[/SoortGerecht]',
+'[Ingredienten]',
+'2 | el | olijfoli,e',
+'1 | | ui',
+'2 | stuks | knoflooktenen',
+'250 | g | pasta',
+'200 | ml | kookroom',
+'150 | g | spinazie naar smaak',
+'| | peper en zout',
+'[/Ingredienten]',
+'[Stappen]',
+'Fruit de ui en knoflook in de olie.',
+'Kook de pasta gaar volgens de verpakking.',
+'Voeg de room en spinazie toe en laat kort slinken.',
+'Meng alles met de pasta en breng op smaak.',
+'[/Stappen]',
+
+'Additional rules:',
+'Convert ranges like "1-2 tl" into a single line (keep original format if unclear).',
+'If “naar smaak” is mentioned, use: naar_smaak | | ingrediënt',
+'If no unit is given, leave the unit field empty.',
+'Keep ordering exactly the same as on the page.',
+'Strip unnecessary text like tips, ads, or story content.',
+
+'Now process this URL: {{URL}}'			]
 		);
 	}
 
@@ -1141,6 +1356,7 @@ class ReceptenAdminPage {
 			'updated'       => __( 'Recept bijgewerkt.', 'bellas-kitchen-recepten' ),
 			'deleted'       => __( 'Recept verwijderd.', 'bellas-kitchen-recepten' ),
 			'missing-name'  => __( 'Vul een naam in voor het recept.', 'bellas-kitchen-recepten' ),
+			'settings-saved' => __( 'Instellingen opgeslagen.', 'bellas-kitchen-recepten' ),
 			'save-failed'   => __( 'Het recept kon niet worden opgeslagen.', 'bellas-kitchen-recepten' ),
 			'delete-failed' => __( 'Het recept kon niet worden verwijderd.', 'bellas-kitchen-recepten' ),
 		];
@@ -1258,6 +1474,10 @@ class ReceptenAdminPage {
 		return admin_url( 'admin.php?page=' . self::TEMPLATE_SLUG );
 	}
 
+	private function getSettingsUrl(): string {
+		return admin_url( 'admin.php?page=' . self::SETTINGS_SLUG );
+	}
+
 	private function getEditUrl( int $id ): string {
 		return add_query_arg(
 			[
@@ -1283,6 +1503,16 @@ class ReceptenAdminPage {
 			add_query_arg(
 				[ 'message' => $message ],
 				$this->getEditUrl( $id )
+			)
+		);
+		exit;
+	}
+
+	private function redirectToSettings( string $message ): void {
+		wp_safe_redirect(
+			add_query_arg(
+				[ 'message' => $message ],
+				$this->getSettingsUrl()
 			)
 		);
 		exit;
@@ -1314,6 +1544,22 @@ class ReceptenAdminPage {
 
 	private function getTemplateImportStateKey(): string {
 		return 'bkr_template_import_state_' . get_current_user_id();
+	}
+
+	private function maskApiKey( string $api_key ): string {
+		$api_key = trim( $api_key );
+
+		if ( '' === $api_key ) {
+			return '';
+		}
+
+		if ( strlen( $api_key ) <= 4 ) {
+			return '****';
+		}
+
+		$prefix = 0 === strpos( $api_key, 'sk-' ) ? 'sk-' : '';
+
+		return $prefix . '****' . substr( $api_key, -4 );
 	}
 
 	private function redirectToForm( int $id, string $message ): void {
