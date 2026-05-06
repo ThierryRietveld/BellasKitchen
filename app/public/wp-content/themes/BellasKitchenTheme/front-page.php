@@ -29,14 +29,14 @@ if ( have_posts() ) {
 }
 
 $repository         = bellas_kitchen_get_recept_repository();
-$latest_recipes     = $repository ? $repository->getLatest( 3 ) : array();
+$latest_recipes     = $repository ? $repository->getLatest( 5 ) : array();
 $recipe_archive_url = bellas_kitchen_get_recepten_archive_url();
 ?>
 
 <div class="relative overflow-hidden bg-slate-50 text-stone-800 dark:bg-slate-950 dark:text-slate-200">
 
 	<div class="container relative px-5 py-8 md:px-8 md:py-10 lg:py-12">
-		<section class="grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)] lg:items-center">
+		<section class="grid h-[30vh] items-center gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
 			<div class="space-y-4">
 				<div class="space-y-3">
 					<h1 class="max-w-3xl font-display text-4xl font-semibold leading-[0.95] text-balance text-stone-900 dark:text-slate-100 md:text-5xl lg:text-6xl">
@@ -53,35 +53,14 @@ $recipe_archive_url = bellas_kitchen_get_recepten_archive_url();
 					<?php endif; ?>
 						<a href="#latest-recipes" class="inline-flex items-center justify-center rounded-full border border-rose-200 bg-white/75 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-rose-50 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800">Nieuwste gerechten</a>
 				</div>
-			</div>
-
-			<div class="relative">
-				<div class="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 shadow-glow backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
-					<?php if ( ! empty( $front_page['thumbnail'] ) ) : ?>
-						<div class="aspect-[4/3] overflow-hidden lg:aspect-[5/4]">
-							<?php echo wp_kses_post( $front_page['thumbnail'] ); ?>
-						</div>
-					<?php else : ?>
-						<div class="flex aspect-[4/3] items-center justify-center bg-slate-100 p-8 text-center text-stone-900 dark:bg-slate-800 dark:text-slate-100 lg:aspect-[5/4]">
-							<div>
-								<p class="text-sm font-semibold uppercase tracking-[0.28em] text-rose-500">Welkom</p>
-								<p class="mt-4 font-display text-4xl leading-none">Kook iets moois</p>
-							</div>
-						</div>
-					<?php endif; ?>
-					<div class="space-y-2 border-t border-rose-100 bg-white/90 p-4 md:p-5 dark:border-slate-700 dark:bg-slate-900/90">
-						<p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-rose-500">Van de thuiskeuken</p>
-						<p class="font-display text-xl text-stone-900 dark:text-slate-100">Zachte kleuren, verse recepten en meteen iets lekkers in beeld.</p>
-					</div>
-				</div>
-			</div>
+			</div>	
 		</section>
 
 		<section id="latest-recipes" class="mt-10 space-y-6 lg:mt-12">
 			<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
 				<div class="space-y-3">
 					<p class="text-xs font-semibold uppercase tracking-[0.28em] text-rose-500">Nieuwste recepten</p>
-					<h2 class="font-display text-3xl text-stone-900 dark:text-slate-100 md:text-4xl">Drie verse ideeën voor vanavond</h2>
+					<h2 class="font-display text-3xl text-stone-900 dark:text-slate-100 md:text-4xl">Verse ideeën voor vanavond</h2>
 					<p class="max-w-2xl text-sm leading-7 text-stone-600 dark:text-slate-300 md:text-base">De nieuwste recepten staan nu sneller in beeld, zodat bezoekers direct kunnen kiezen.</p>
 				</div>
 				<?php if ( $recipe_archive_url ) : ?>
