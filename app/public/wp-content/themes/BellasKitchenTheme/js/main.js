@@ -301,6 +301,82 @@
 		render();
 	}
 
+	function normalizeSearchText( value ) {
+		var text = String( value || '' ).toLowerCase();
+
+		if ( 'function' === typeof text.normalize ) {
+			text = text.normalize( 'NFD' ).replace( /[\u0300-\u036f]/g, '' );
+		}
+
+		return text.replace( /\s+/g, ' ' ).trim();
+	}
+
+	function formatRecipeSearchCount( count, hasQuery ) {
+		return 1 === count ? '1 recept' : count + ' recepten';
+	}
+
+	function initRecipeArchiveSearch() {
+		var archiveRoot = document.querySelector( '[data-recipe-archive]' );
+		var input;
+		var cards;
+		var indexedCards;
+		var emptyElement;
+		var countElement;
+
+		if ( ! archiveRoot ) {
+			return;
+		}
+
+		input = archiveRoot.querySelector( '[data-recipe-search-input]' );
+		cards = Array.prototype.slice.call( archiveRoot.querySelectorAll( '[data-recipe-card]' ) );
+		emptyElement = archiveRoot.querySelector( '[data-recipe-search-empty]' );
+		countElement = archiveRoot.querySelector( '[data-recipe-search-count]' );
+
+		if ( ! input || ! cards.length ) {
+			return;
+		}
+
+		indexedCards = cards.map( function( card ) {
+			return {
+				element: card,
+				searchText: normalizeSearchText( card.getAttribute( 'data-recipe-search' ) || card.textContent )
+			};
+		} );
+
+		function renderResults() {
+			var query = normalizeSearchText( input.value );
+			var queryParts = query ? query.split( ' ' ) : [];
+			var visibleCount = 0;
+
+			indexedCards.forEach( function( item ) {
+				var isVisible = ! queryParts.length || queryParts.every( function( queryPart ) {
+					return -1 !== item.searchText.indexOf( queryPart );
+				} );
+
+				item.element.classList.toggle( 'hidden', ! isVisible );
+
+				if ( isVisible ) {
+					item.element.removeAttribute( 'aria-hidden' );
+					visibleCount++;
+				} else {
+					item.element.setAttribute( 'aria-hidden', 'true' );
+				}
+			} );
+
+			if ( countElement ) {
+				countElement.textContent = formatRecipeSearchCount( visibleCount, queryParts.length > 0 );
+			}
+
+			if ( emptyElement ) {
+				emptyElement.classList.toggle( 'hidden', ! queryParts.length || visibleCount > 0 );
+			}
+		}
+
+		input.addEventListener( 'input', renderResults );
+		input.addEventListener( 'search', renderResults );
+		renderResults();
+	}
+
 	document.addEventListener( 'DOMContentLoaded', function() {
 		var toggleButton = document.getElementById( 'theme-toggle' );
 		var isDark = document.documentElement.classList.contains( 'dark' );
@@ -318,6 +394,7 @@
 
 	document.addEventListener( 'DOMContentLoaded', function() {
 		initRecipeServings();
+		initRecipeArchiveSearch();
 	} );
 
 } )();

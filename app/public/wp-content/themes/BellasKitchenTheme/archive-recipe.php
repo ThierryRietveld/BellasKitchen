@@ -11,41 +11,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$repository   = bellas_kitchen_get_recept_repository();
-$current_page = bellas_kitchen_get_recepten_archive_page();
-$archive_url  = bellas_kitchen_get_recepten_archive_url();
-$pagination   = $repository ? $repository->getPaginated( $current_page, 9 ) : array(
-	'items'        => array(),
-	'total_items'  => 0,
-	'per_page'     => 9,
-	'current_page' => 1,
-	'total_pages'  => 1,
-);
-$recepten     = $pagination['items'];
-$total_pages  = (int) $pagination['total_pages'];
-$current_page = (int) $pagination['current_page'];
-$pagination_ui = '';
-
-if ( $total_pages > 1 ) {
-	$pagination_ui = paginate_links(
-		array(
-			'base'      => trailingslashit( $archive_url ) . '%_%',
-			'format'    => 'pagina/%#%/',
-			'current'   => $current_page,
-			'total'     => $total_pages,
-			'type'      => 'list',
-			'prev_text' => '&larr; Vorige',
-			'next_text' => 'Volgende &rarr;',
-		)
-	);
-}
+$repository    = bellas_kitchen_get_recept_repository();
+$recepten      = $repository ? $repository->getAll() : array();
+$total_recipes = count( $recepten );
 ?>
 
-<div class="container px-5 py-10 md:px-8">
+<div class="container px-5 py-10 md:px-8" data-recipe-archive>
 
-	<header class="archive-header mb-6">
-		<h1 class="archive-title font-display text-4xl font-semibold text-slate-900 dark:text-slate-100">Recepten</h1>
-		<p class="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">Alle recepten worden rechtstreeks uit de nieuwe receptentabellen geladen.</p>
+	<header class="archive-header mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+		<div>
+			<h1 class="archive-title font-display text-4xl font-semibold text-slate-900 dark:text-slate-100">Recepten</h1>
+			<p class="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">Alle recepten van BellasKitchen.</p>
+		</div>
+
+		<?php if ( ! empty( $recepten ) ) : ?>
+			<div class="w-full md:max-w-sm">
+				<label for="recipe-archive-search" class="sr-only">Zoek recepten</label>
+				<input id="recipe-archive-search" type="search" class="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-ember-500 focus:ring-4 focus:ring-ember-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-amber-300 dark:focus:ring-slate-800" placeholder="Zoek recepten" autocomplete="off" data-recipe-search-input>
+				<p class="mt-2 text-sm text-slate-500 dark:text-slate-400" data-recipe-search-count aria-live="polite">
+					<?php
+					echo esc_html(
+						sprintf(
+							_n( '%d recept', '%d recepten', $total_recipes, 'bellas-kitchen-theme' ),
+							$total_recipes
+						)
+					);
+					?>
+				</p>
+			</div>
+		<?php endif; ?>
 	</header>
 
 	<?php if ( ! empty( $recepten ) ) : ?>
@@ -60,9 +54,23 @@ if ( $total_pages > 1 ) {
 				$difficulty  = (string) ( $recept['moeilijkheid'] ?? '' );
 				$meal_type   = (string) ( $recept['soort_gerecht'] ?? '' );
 				$description = (string) ( $recept['beschrijving'] ?? '' );
+				$search_text = implode(
+					' ',
+					array_filter(
+						array(
+							(string) ( $recept['naam'] ?? '' ),
+							$description,
+							$difficulty,
+							bellas_kitchen_format_recept_label( $difficulty ),
+							$meal_type,
+							bellas_kitchen_format_recept_label( $meal_type ),
+							$duration > 0 ? bellas_kitchen_format_recept_duration( $duration ) : '',
+						)
+					)
+				);
 				?>
 
-				<article id="recept-<?php echo esc_attr( $recept['id'] ); ?>" class="recipe-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900">
+				<article id="recept-<?php echo esc_attr( $recept['id'] ); ?>" class="recipe-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900" data-recipe-card data-recipe-search="<?php echo esc_attr( $search_text ); ?>">
 					<a href="<?php echo esc_url( bellas_kitchen_get_recept_url( $recept ) ); ?>" class="recipe-card-link block">
 
 						<div class="recipe-card-image aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
@@ -101,11 +109,7 @@ if ( $total_pages > 1 ) {
 			<?php endforeach; ?>
 		</div>
 
-		<?php if ( $pagination_ui ) : ?>
-			<div class="pagination mt-8 text-slate-700 dark:text-slate-300">
-				<?php echo wp_kses_post( $pagination_ui ); ?>
-			</div>
-		<?php endif; ?>
+		<p class="mt-8 hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" data-recipe-search-empty>Geen recepten gevonden voor je zoekopdracht.</p>
 
 	<?php else : ?>
 
