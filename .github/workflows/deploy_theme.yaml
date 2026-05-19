@@ -1,0 +1,51 @@
+name: Deploy Theme
+
+on:
+  workflow_dispatch:
+
+env:
+  THEME_DIR: app/public/wp-content/themes/BellasKitchenTheme
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install theme dependencies
+        working-directory: ${{ env.THEME_DIR }}
+        run: npm ci
+
+      - name: Build theme CSS
+        working-directory: ${{ env.THEME_DIR }}
+        run: npm run build:css
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Upload BellasKitchenTheme via FTP
+        env:
+          HOST: ${{ secrets.SFTP_HOST }}
+          PORT: ${{ secrets.SFTP_PORT }}
+          USER: ${{ secrets.SFTP_USER }}
+          PASS: ${{ secrets.SFTP_PASSWORD }}
+          REMOTE_DIR: ${{ secrets.SFTP_REMOTE_DIR }}
+        run: |
+          set -euo pipefail
+
+          : "${HOST:?Missing secrets.SFTP_HOST}"
+          : "${PORT:?Missing secrets.SFTP_PORT}"
+          : "${USER:?Missing secrets.SFTP_USER}"
+          : "${PASS:?Missing secrets.SFTP_PASSWORD}"
+          : "${REMOTE_DIR:?Missing secrets.SFTP_REMOTE_DIR}"
+
+          EXCLUDES="--exclude .DS_Store --exclude node_modules/ --exclude npm-debug.log*"
+
+          lftp -u "$USER","$PASS" -p "$PORT" "ftp://$HOST" <<EOF
+          set net:timeout 20
+          set net:max-retries 2
+          mirror -R --only-newer --verbose $EXCLUDES "$THEME_DIR/" "$REMOTE_DIR/"
+          bye
+          EOF
