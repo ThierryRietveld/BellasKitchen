@@ -3,6 +3,12 @@
 !.gitignore
 !README.md
 
+# GitHub workflows
+!.github/
+!.github/workflows/
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
+
 # Don't ignore directories (so we can traverse into them)
 !*/
 
