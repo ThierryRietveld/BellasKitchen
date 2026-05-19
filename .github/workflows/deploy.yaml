@@ -43,7 +43,7 @@ jobs:
 
           EXCLUDES="--exclude .DS_Store --exclude node_modules/ --exclude npm-debug.log*"
 
-          lftp -u "$USER","$PASS" -p "$PORT" "sftp://$HOST" <<EOF
+          lftp -u "$USER","$PASS" -p "$PORT" "ftp://$HOST" <<EOF
           set sftp:auto-confirm yes
           set net:timeout 20
           set net:max-retries 2
