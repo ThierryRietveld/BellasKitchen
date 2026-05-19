@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  THEME_DIR: app/public/wp-content/plugins/bellas-kitchen-plugin
+  PLUGIN_DIR: app/public/wp-content/plugins/bellas-kitchen-recepten
 
 jobs:
   deploy:
@@ -13,14 +13,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install plugin dependencies
-        working-directory: ${{ env.THEME_DIR }}
-        run: npm ci
-
-      - name: Build plugin CSS
-        working-directory: ${{ env.THEME_DIR }}
-        run: npm run build:css
 
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
@@ -46,6 +38,6 @@ jobs:
           lftp -u "$USER","$PASS" -p "$PORT" "ftp://$HOST" <<EOF
           set net:timeout 20
           set net:max-retries 2
-          mirror -R --only-newer --verbose $EXCLUDES "$THEME_DIR/" "$REMOTE_DIR/"
+          mirror -R --only-newer --verbose $EXCLUDES "$PLUGIN_DIR/" "$REMOTE_DIR/"
           bye
           EOF
