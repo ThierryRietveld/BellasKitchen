@@ -32,6 +32,107 @@ function bellas_kitchen_theme_setup() {
 add_action( 'after_setup_theme', 'bellas_kitchen_theme_setup' );
 
 /**
+ * Register Customizer settings for mode-specific logos.
+ */
+function bellas_kitchen_customize_register( \WP_Customize_Manager $wp_customize ): void {
+	$wp_customize->add_setting(
+		'bellas_kitchen_light_mode_logo',
+		array(
+			'default'           => 0,
+			'sanitize_callback' => 'absint',
+			'transport'         => 'refresh',
+		)
+	);
+
+	$wp_customize->add_control(
+		new \WP_Customize_Media_Control(
+			$wp_customize,
+			'bellas_kitchen_light_mode_logo',
+			array(
+				'label'       => esc_html__( 'Logo voor lichte modus', 'bellas-kitchen-theme' ),
+				'description' => esc_html__( 'Gebruik hier de donkere/horizontale variant voor op een lichte navigatiebalk.', 'bellas-kitchen-theme' ),
+				'section'     => 'title_tagline',
+				'mime_type'   => 'image',
+			)
+		)
+	);
+
+	$wp_customize->add_setting(
+		'bellas_kitchen_dark_mode_logo',
+		array(
+			'default'           => 0,
+			'sanitize_callback' => 'absint',
+			'transport'         => 'refresh',
+		)
+	);
+
+	$wp_customize->add_control(
+		new \WP_Customize_Media_Control(
+			$wp_customize,
+			'bellas_kitchen_dark_mode_logo',
+			array(
+				'label'       => esc_html__( 'Logo voor donkere modus', 'bellas-kitchen-theme' ),
+				'description' => esc_html__( 'Gebruik hier de witte/horizontale variant voor op een donkere navigatiebalk.', 'bellas-kitchen-theme' ),
+				'section'     => 'title_tagline',
+				'mime_type'   => 'image',
+			)
+		)
+	);
+}
+add_action( 'customize_register', 'bellas_kitchen_customize_register' );
+
+/**
+ * Render the site logo in the header, falling back to text branding.
+ */
+function bellas_kitchen_render_site_branding(): void {
+	$light_logo_id = absint( get_theme_mod( 'bellas_kitchen_light_mode_logo', 0 ) );
+	$dark_logo_id  = absint( get_theme_mod( 'bellas_kitchen_dark_mode_logo', 0 ) );
+	$site_name     = get_bloginfo( 'name' );
+
+	if ( $light_logo_id || $dark_logo_id ) {
+		$light_logo_classes = $dark_logo_id ? 'block h-25 w-auto max-w-64 object-contain dark:hidden' : 'block h-12 w-auto max-w-56 object-contain';
+		$dark_logo_classes  = $light_logo_id ? 'hidden h-25 w-auto max-w-64 object-contain dark:block' : 'block h-12 w-auto max-w-56 object-contain';
+
+		echo '<a class="inline-flex items-center" href="' . esc_url( home_url( '/' ) ) . '" aria-label="' . esc_attr( $site_name ) . '">';
+
+		if ( $light_logo_id ) {
+			echo wp_get_attachment_image(
+				$light_logo_id,
+				'full',
+				false,
+				array(
+					'class' => $light_logo_classes,
+					'alt'   => $site_name,
+				)
+			);
+		}
+
+		if ( $dark_logo_id ) {
+			echo wp_get_attachment_image(
+				$dark_logo_id,
+				'full',
+				false,
+				array(
+					'class' => $dark_logo_classes,
+					'alt'   => $site_name,
+				)
+			);
+		}
+
+		echo '</a>';
+
+		return;
+	}
+
+	?>
+	<div>
+		<h1 class="site-title text-2xl font-display font-bold text-slate-900 dark:text-night-text"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+		<p class="site-description text-sm text-slate-600 dark:text-night-subtle"><?php bloginfo( 'description' ); ?></p>
+	</div>
+	<?php
+}
+
+/**
  * Fallback menu output for primary navigation.
  */
 function bellas_kitchen_primary_menu_fallback(): void {
@@ -43,10 +144,10 @@ function bellas_kitchen_primary_menu_fallback(): void {
 	);
 
 	echo '<ul id="primary-menu" class="menu m-0 flex list-none flex-wrap items-center gap-2 p-0">';
-	echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-amber-300" href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'bellas-kitchen-theme' ) . '</a></li>';
+	echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated dark:hover:text-amber-300" href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'bellas-kitchen-theme' ) . '</a></li>';
 
 	foreach ( $pages as $page ) {
-		echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-amber-300" href="' . esc_url( get_permalink( $page->ID ) ) . '">' . esc_html( $page->post_title ) . '</a></li>';
+		echo '<li class="menu-item"><a class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated dark:hover:text-amber-300" href="' . esc_url( get_permalink( $page->ID ) ) . '">' . esc_html( $page->post_title ) . '</a></li>';
 	}
 
 	echo '</ul>';
@@ -89,7 +190,7 @@ function bellas_kitchen_primary_menu_link_classes( array $atts, \WP_Post $item, 
 		return $atts;
 	}
 
-	$link_classes = 'inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-amber-300';
+	$link_classes = 'inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated dark:hover:text-amber-300';
 	$is_active    = ! empty( $item->classes ) && (
 		in_array( 'current-menu-item', $item->classes, true ) ||
 		in_array( 'current_page_item', $item->classes, true ) ||
@@ -97,7 +198,7 @@ function bellas_kitchen_primary_menu_link_classes( array $atts, \WP_Post $item, 
 	);
 
 	if ( $is_active ) {
-		$link_classes .= ' bg-ember-100 text-ember-700 dark:bg-slate-800 dark:text-amber-300';
+		$link_classes .= ' bg-ember-100 text-ember-700 dark:bg-night-surfaceElevated dark:text-amber-300';
 	}
 
 	$atts['class'] = isset( $atts['class'] ) ? trim( $atts['class'] . ' ' . $link_classes ) : $link_classes;
@@ -177,7 +278,22 @@ function bellas_kitchen_print_tailwind_config(): void {
 						butter: { 100: '#fff4bf', 200: '#ffe78a', 300: '#ffd95c' },
 						mint: { 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac' },
 						berry: { 100: '#fce7f3', 200: '#fbcfe8', 300: '#f9a8d4' },
-						skycandy: { 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc' }
+						skycandy: { 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc' },
+						night: {
+							page: '#17080d',
+							surface: '#241016',
+							surfaceElevated: '#31161d',
+							surfaceHover: '#421d27',
+							border: '#5a2934',
+							borderMuted: '#3a1a22',
+							borderStrong: '#7a3846',
+							text: '#fff1f4',
+							textSoft: '#f8dbe2',
+							muted: '#e6b7c2',
+							subtle: '#c88a99',
+							placeholder: '#9f6472',
+							ring: '#421d27'
+						}
 					},
 					fontFamily: {
 						display: [ 'Fraunces', 'serif' ],

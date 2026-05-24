@@ -3,6 +3,7 @@ module.exports = {
   darkMode: 'class',
   content: [
     './*.php',
+    './template-parts/**/*.php',
     './js/**/*.js'
   ],
   theme: {
@@ -25,7 +26,22 @@ module.exports = {
         butter: { 100: '#fff4bf', 200: '#ffe78a', 300: '#ffd95c' },
         mint: { 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac' },
         berry: { 100: '#fce7f3', 200: '#fbcfe8', 300: '#f9a8d4' },
-        skycandy: { 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc' }
+        skycandy: { 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc' },
+        night: {
+          page: '#17080d',
+          surface: '#241016',
+          surfaceElevated: '#31161d',
+          surfaceHover: '#421d27',
+          border: '#5a2934',
+          borderMuted: '#3a1a22',
+          borderStrong: '#7a3846',
+          text: '#fff1f4',
+          textSoft: '#f8dbe2',
+          muted: '#e6b7c2',
+          subtle: '#c88a99',
+          placeholder: '#9f6472',
+          ring: '#421d27'
+        }
       },
       fontFamily: {
         display: ['Fraunces', 'serif'],

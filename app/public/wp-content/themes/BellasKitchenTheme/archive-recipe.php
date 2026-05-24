@@ -20,15 +20,15 @@ $total_recipes = count( $recepten );
 
 	<header class="archive-header mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 		<div>
-			<h1 class="archive-title font-display text-4xl font-semibold text-slate-900 dark:text-slate-100">Recepten</h1>
-			<p class="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">Alle recepten van BellasKitchen.</p>
+			<h1 class="archive-title font-display text-4xl font-semibold text-slate-900 dark:text-night-text">Recepten</h1>
+			<p class="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-night-muted">Alle recepten van BellasKitchen.</p>
 		</div>
 
 		<?php if ( ! empty( $recepten ) ) : ?>
 			<div class="w-full md:max-w-sm">
 				<label for="recipe-archive-search" class="sr-only">Zoek recepten</label>
-				<input id="recipe-archive-search" type="search" class="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-ember-500 focus:ring-4 focus:ring-ember-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-amber-300 dark:focus:ring-slate-800" placeholder="Zoek recepten" autocomplete="off" data-recipe-search-input>
-				<p class="mt-2 text-sm text-slate-500 dark:text-slate-400" data-recipe-search-count aria-live="polite">
+				<input id="recipe-archive-search" type="search" class="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-ember-500 focus:ring-4 focus:ring-ember-100 dark:border-night-border dark:bg-night-surface dark:text-night-text dark:placeholder:text-night-placeholder dark:focus:border-amber-300 dark:focus:ring-night-ring" placeholder="Zoek recepten" autocomplete="off" data-recipe-search-input>
+				<p class="mt-2 text-sm text-slate-500 dark:text-night-subtle" data-recipe-search-count aria-live="polite">
 					<?php
 					echo esc_html(
 						sprintf(
@@ -70,10 +70,10 @@ $total_recipes = count( $recepten );
 				);
 				?>
 
-				<article id="recept-<?php echo esc_attr( $recept['id'] ); ?>" class="recipe-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900" data-recipe-card data-recipe-search="<?php echo esc_attr( $search_text ); ?>">
+				<article id="recept-<?php echo esc_attr( $recept['id'] ); ?>" class="recipe-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 dark:border-night-borderMuted dark:bg-night-surface" data-recipe-card data-recipe-search="<?php echo esc_attr( $search_text ); ?>">
 					<a href="<?php echo esc_url( bellas_kitchen_get_recept_url( $recept ) ); ?>" class="recipe-card-link block">
 
-						<div class="recipe-card-image aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
+						<div class="recipe-card-image aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-night-surfaceElevated">
 							<?php if ( $main_url ) : ?>
 								<img src="<?php echo esc_url( $main_url ); ?>"
 								     alt="<?php echo esc_attr( $main_alt ); ?>"
@@ -84,10 +84,10 @@ $total_recipes = count( $recepten );
 						</div>
 
 						<div class="recipe-card-body space-y-4 p-5">
-							<h2 class="recipe-card-title font-display text-2xl font-semibold text-slate-900 dark:text-slate-100"><?php echo esc_html( $recept['naam'] ); ?></h2>
+							<h2 class="recipe-card-title font-display text-2xl font-semibold text-slate-900 dark:text-night-text"><?php echo esc_html( $recept['naam'] ); ?></h2>
 
 							<?php if ( $description ) : ?>
-								<p class="recipe-card-description text-slate-700 dark:text-slate-300"><?php echo esc_html( wp_trim_words( $description, 15 ) ); ?></p>
+								<p class="recipe-card-description text-slate-700 dark:text-night-muted"><?php echo esc_html( wp_trim_words( $description, 15 ) ); ?></p>
 							<?php endif; ?>
 
 							<div class="recipe-card-meta flex flex-wrap gap-2 text-sm">
@@ -109,11 +109,11 @@ $total_recipes = count( $recepten );
 			<?php endforeach; ?>
 		</div>
 
-		<p class="mt-8 hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" data-recipe-search-empty>Geen recepten gevonden voor je zoekopdracht.</p>
+		<p class="mt-8 hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-slate-700 dark:border-night-border dark:bg-night-surface dark:text-night-muted" data-recipe-search-empty>Geen recepten gevonden voor je zoekopdracht.</p>
 
 	<?php else : ?>
 
-		<p class="no-recipes text-slate-700 dark:text-slate-300">Nog geen recepten gevonden. Zodra je recepten toevoegt in de nieuwe plugin verschijnen ze hier automatisch.</p>
+		<p class="no-recipes text-slate-700 dark:text-night-muted">Nog geen recepten gevonden. Zodra je recepten toevoegt in de nieuwe plugin verschijnen ze hier automatisch.</p>
 
 	<?php endif; ?>
 

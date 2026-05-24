@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg width="1200" height="120" viewBox="75.541 5.15 1049.49 98.254" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bakkertje Bella decorative divider" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <bx:export>
+      <bx:file format="svg" path="Bakkertje Bella decorative divider.svg"/>
+    </bx:export>
+  </defs>
+  <title>Bakkertje Bella decorative divider</title>
+  <desc>A horizontal decorative divider with soft cream swooshes, small dots, and a pink heart.</desc>
+  <path d="M 106 58 C 146 30 256 52 356 66 C 441 78 506 65 536 60" stroke="#F6EBDD" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <path d="M 106 58 C 86 62 84 40 103 35" stroke="#F6EBDD" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <path d="M 663 60 C 693 65 758 78 843 66 C 943 52 1053 30 1093 58" stroke="#F6EBDD" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <path d="M 1093 58 C 1113 62 1115 40 1096 35" stroke="#F6EBDD" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <circle cx="555" cy="60" r="7" fill="#F6EBDD"/>
+  <circle cx="643" cy="60" r="7" fill="#F6EBDD"/>
+  <path d="M600 81 C596 75, 573 57, 573 42 C573 31, 586 25, 596 35 C598 37, 600 40, 600 40 C600 40, 602 37, 604 35 C614 25, 627 31, 627 42 C627 57, 604 75, 600 81Z" fill="#E9878C"/>
+</svg>

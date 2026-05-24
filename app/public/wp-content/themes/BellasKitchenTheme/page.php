@@ -17,8 +17,8 @@ get_header();
 	while ( have_posts() ) {
 		the_post();
 		?>
-		<article id="post-<?php the_ID(); ?>" <?php post_class( 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900' ); ?>>
-			<h1 class="entry-title font-display text-4xl font-semibold text-slate-900 dark:text-slate-100"><?php the_title(); ?></h1>
+		<article id="post-<?php the_ID(); ?>" <?php post_class( 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-night-borderMuted dark:bg-night-surface' ); ?>>
+			<h1 class="entry-title font-display text-4xl font-semibold text-slate-900 dark:text-night-text"><?php the_title(); ?></h1>
 
 			<?php
 			if ( has_post_thumbnail() ) {
@@ -30,7 +30,7 @@ get_header();
 			}
 			?>
 
-			<div class="entry-content mt-6 text-slate-700 dark:text-slate-300">
+			<div class="entry-content mt-6 text-slate-700 dark:text-night-muted">
 				<?php
 				the_content();
 				wp_link_pages( array(
