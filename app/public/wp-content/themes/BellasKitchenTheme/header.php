@@ -28,12 +28,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php wp_body_open(); ?>
 	<div id="page" class="site">
 		<header id="masthead" class="site-header border-b border-slate-200 bg-white transition-colors dark:border-night-borderMuted dark:bg-night-surface">
-			<div class="container flex flex-col items-start justify-between gap-4 py-1 md:flex-row md:items-center">
+			<div class="container flex flex-col items-start justify-between py-1 md:flex-row md:items-center">
 				<div class="site-branding">
 					<?php bellas_kitchen_render_site_branding(); ?>
 				</div>
-				<div class="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center md:gap-4">
-					<nav id="site-navigation" class="main-navigation w-full md:w-auto">
+				<div class="flex w-full gap-3 md:w-auto flex-row md:items-center md:gap-4">
+					<nav id="site-navigation" class="main-navigation md:w-auto flex-1">
 						<?php
 						bellas_kitchen_render_primary_menu();
 						?>
