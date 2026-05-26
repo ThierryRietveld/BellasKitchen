@@ -97,7 +97,7 @@ $main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
 
 					<?php if ( $servings ) : ?>
 						<div class="rounded-[1.5rem] border border-rose-100 bg-white/90 p-5 shadow-card dark:border-night-border dark:bg-night-surface/90" data-recipe-servings data-base-servings="<?php echo esc_attr( $servings ); ?>">
-							<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+							<div class="flex gap-4 flex-row sm:items-center justify-between">
 								<div>
 									<p class="text-xs font-semibold uppercase tracking-[0.24em] text-rose-500">Porties aanpassen</p>
 									<p class="mt-2 flex items-baseline gap-2 text-stone-900 dark:text-night-text">
@@ -106,7 +106,7 @@ $main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
 									</p>
 								</div>
 
-								<div class="inline-flex items-center rounded-full border border-rose-200 bg-white shadow-sm dark:border-night-border dark:bg-night-page">
+								<div class="inline-flex items-center rounded-full border max-w-[11.5rem] border-rose-200 bg-white shadow-sm dark:border-night-border dark:bg-night-page">
 									<button type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-l-full text-xl font-semibold text-stone-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated" data-servings-decrease aria-label="Verlaag aantal personen">
 										<span aria-hidden="true">&minus;</span>
 									</button>

@@ -750,6 +750,18 @@ video {
   max-width: 100%;
 }
 
+.max-w-\[12rem\] {
+  max-width: 12rem;
+}
+
+.max-w-\[11rem\] {
+  max-width: 11rem;
+}
+
+.max-w-\[11\.5rem\] {
+  max-width: 11.5rem;
+}
+
 .flex-1 {
   flex: 1 1 0%;
 }
