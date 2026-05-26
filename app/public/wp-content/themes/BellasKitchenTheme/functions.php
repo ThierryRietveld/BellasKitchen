@@ -172,8 +172,8 @@ function bellas_kitchen_render_primary_menu(): void {
  * Add Tailwind classes to primary menu <li> items.
  */
 function bellas_kitchen_primary_menu_item_classes( array $classes, \WP_Post $item, \stdClass $args ): array {
-	if ( empty( $args->theme_location ) || 'primary' !== $args->theme_location ) {
-		return $classes;
+	if ( ! bellas_kitchen_is_menu_item_current_request( $item ) ) {
+		$classes = bellas_kitchen_without_current_menu_classes( $classes );
 	}
 
 	$classes[] = 'menu-item';
@@ -191,21 +191,65 @@ function bellas_kitchen_primary_menu_link_classes( array $atts, \WP_Post $item, 
 	}
 
 	$link_classes = 'inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-ember-100 hover:text-ember-700 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated dark:hover:text-amber-300';
-	$is_active    = ! empty( $item->classes ) && (
-		in_array( 'current-menu-item', $item->classes, true ) ||
-		in_array( 'current_page_item', $item->classes, true ) ||
-		in_array( 'current-menu-ancestor', $item->classes, true )
-	);
+	$is_active    = bellas_kitchen_is_menu_item_current_request( $item );
 
 	if ( $is_active ) {
 		$link_classes .= ' bg-ember-100 text-ember-700 dark:bg-night-surfaceElevated dark:text-amber-300';
 	}
 
-	$atts['class'] = isset( $atts['class'] ) ? trim( $atts['class'] . ' ' . $link_classes ) : $link_classes;
+	$atts['class'] = $link_classes;
+
+	if ( ! $is_active ) {
+		unset( $atts['aria-current'] );
+	}
 
 	return $atts;
 }
 add_filter( 'nav_menu_link_attributes', 'bellas_kitchen_primary_menu_link_classes', 10, 3 );
+
+/**
+ * Check whether a menu item matches the current request path.
+ */
+function bellas_kitchen_is_menu_item_current_request( \WP_Post $item ): bool {
+	if ( empty( $item->url ) ) {
+		return false;
+	}
+
+	return bellas_kitchen_normalize_url_path( $item->url ) === bellas_kitchen_get_current_request_path();
+}
+
+/**
+ * Get the normalized current browser request path.
+ */
+function bellas_kitchen_get_current_request_path(): string {
+	$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+	$path        = wp_parse_url( $request_uri, PHP_URL_PATH );
+
+	return '/' . trim( (string) $path, '/' );
+}
+
+/**
+ * Normalize a URL to a comparable path.
+ */
+function bellas_kitchen_normalize_url_path( string $url ): string {
+	$path = wp_parse_url( $url, PHP_URL_PATH );
+
+	return '/' . trim( (string) $path, '/' );
+}
+
+/**
+ * Remove all current-state classes from a menu item.
+ */
+function bellas_kitchen_without_current_menu_classes( array $classes ): array {
+	return array_values(
+		array_filter(
+			$classes,
+			static function ( string $class ): bool {
+				return 0 !== strpos( $class, 'current-' ) && 0 !== strpos( $class, 'current_' );
+			}
+		)
+	);
+}
 
 /**
  * Enqueue styles and scripts
