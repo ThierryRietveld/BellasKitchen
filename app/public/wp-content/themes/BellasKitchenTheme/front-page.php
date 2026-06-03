@@ -19,10 +19,10 @@ if ( have_posts() ) {
 	while ( have_posts() ) {
 		the_post();
 		$front_page = array(
-			'title'      => get_the_title(),
-			'content'    => get_the_content(),
-			'permalink'  => get_permalink(),
-			'thumbnail'  => get_the_post_thumbnail( get_the_ID(), 'large', array( 'class' => 'h-full w-full object-cover' ) ),
+			'title'         => get_the_title(),
+			'content'       => get_the_content(),
+			'permalink'     => get_permalink(),
+			'thumbnail_url' => get_the_post_thumbnail_url( get_the_ID(), 'full' ),
 		);
 	}
 	wp_reset_postdata();
@@ -31,18 +31,27 @@ if ( have_posts() ) {
 $repository         = bellas_kitchen_get_recept_repository();
 $latest_recipes     = $repository ? $repository->getLatest( 5 ) : array();
 $recipe_archive_url = bellas_kitchen_get_recepten_archive_url();
+$hero_image_url     = $front_page['thumbnail_url'] ?? '';
+
+if ( ! $hero_image_url && ! empty( $latest_recipes ) ) {
+	$hero_image_url = bellas_kitchen_get_recept_image_url( $latest_recipes[0], 'full' );
+}
+
+$hero_style = $hero_image_url ? sprintf( "background-image: url('%s');", esc_url( $hero_image_url ) ) : '';
 ?>
 
 <div class="relative overflow-hidden bg-slate-50 text-stone-800 dark:bg-night-page dark:text-night-textSoft">
 
-	<div class="container relative px-5 py-8 md:px-8 md:py-10 lg:py-12">
-		<section class="grid h-[30vh] items-center gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
-			<div class="space-y-4">
-				<div class="space-y-3">
-					<h1 class="max-w-3xl font-display text-4xl font-semibold leading-[0.95] text-balance text-stone-900 dark:text-night-text md:text-5xl lg:text-6xl">
+	<section class="relative min-h-[58vh] overflow-hidden bg-rose-100 bg-cover bg-center dark:bg-night-surface" style="<?php echo esc_attr( $hero_style ); ?>">
+		<div class="absolute inset-0 bg-white/70 dark:bg-night-page/70" aria-hidden="true"></div>
+		<div class="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-white/20 dark:from-night-page dark:via-night-page/85 dark:to-night-page/25" aria-hidden="true"></div>
+		<div class="container relative flex min-h-[58vh] items-center px-5 py-16 md:px-8 md:py-20 lg:py-24">
+			<div class="max-w-3xl space-y-5">
+				<div class="space-y-4">
+					<h1 class="font-display text-4xl font-semibold leading-[0.95] text-balance text-stone-900 dark:text-night-text md:text-5xl lg:text-6xl">
 						<?php echo esc_html( $front_page['title'] ?? get_bloginfo( 'name' ) ); ?>
 					</h1>
-					<div class="max-w-2xl text-sm leading-7 text-stone-600 dark:text-night-muted md:text-base">
+					<div class="max-w-2xl text-sm leading-7 text-stone-700 dark:text-night-textSoft md:text-base">
 						<?php echo wp_kses_post( wpautop( $front_page['content'] ?? get_bloginfo( 'description' ) ) ); ?>
 					</div>
 				</div>
@@ -51,11 +60,13 @@ $recipe_archive_url = bellas_kitchen_get_recepten_archive_url();
 					<?php if ( $recipe_archive_url ) : ?>
 						<a href="<?php echo esc_url( $recipe_archive_url ); ?>" class="inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-5 py-3 text-sm font-bold text-stone-900 shadow-card transition hover:bg-rose-50 dark:border-night-border dark:bg-night-surface dark:text-night-text dark:hover:bg-night-surfaceElevated">Bekijk alle recepten</a>
 					<?php endif; ?>
-						<a href="#latest-recipes" class="inline-flex items-center justify-center rounded-full border border-rose-200 bg-white/75 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-rose-50 dark:border-night-border dark:bg-night-surface/80 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated">Nieuwste gerechten</a>
+					<a href="#latest-recipes" class="inline-flex items-center justify-center rounded-full border border-rose-200 bg-white/80 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-rose-50 dark:border-night-border dark:bg-night-surface/80 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated">Nieuwste gerechten</a>
 				</div>
-			</div>	
-		</section>
+			</div>
+		</div>
+	</section>
 
+	<div class="container relative px-5 py-8 md:px-8 md:py-10 lg:py-12">
 		<section id="latest-recipes" class="mt-10 space-y-6 lg:mt-12">
 			<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
 				<div class="space-y-3">
