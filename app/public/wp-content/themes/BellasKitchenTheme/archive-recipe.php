@@ -21,7 +21,7 @@ $total_recipes = count( $recepten );
 	<header class="archive-header mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 		<div>
 			<h1 class="archive-title font-display text-4xl font-semibold text-slate-900 dark:text-night-text">Recepten</h1>
-			<p class="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-night-muted">Alle recepten van BellasKitchen.</p>
+			<p class="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-night-muted">Alle recepten van Bella.</p>
 		</div>
 
 		<?php if ( ! empty( $recepten ) ) : ?>
