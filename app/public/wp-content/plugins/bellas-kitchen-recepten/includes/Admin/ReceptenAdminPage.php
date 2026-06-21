@@ -614,6 +614,10 @@ class ReceptenAdminPage {
 									<input type="number" id="bkr-bereidingstijd" name="bereidingstijd" min="0" step="1" class="small-text" value="<?php echo esc_attr( absint( $recept['bereidingstijd'] ) ); ?>">
 								</p>
 								<p>
+									<label for="bkr-oven-temperatuur"><?php esc_html_e( 'Oventemperatuur (°C)', 'bellas-kitchen-recepten' ); ?></label>
+									<input type="number" id="bkr-oven-temperatuur" name="oven_temperatuur" min="0" step="1" class="small-text" value="<?php echo esc_attr( $this->getNumberInputValue( absint( $recept['oven_temperatuur'] ?? 0 ) ) ); ?>">
+								</p>
+								<p>
 									<label for="bkr-moeilijkheid"><?php esc_html_e( 'Moeilijkheid', 'bellas-kitchen-recepten' ); ?></label>
 									<select id="bkr-moeilijkheid" name="moeilijkheid">
 										<?php foreach ( $this->getDifficulties() as $value => $label ) : ?>
@@ -777,15 +781,16 @@ class ReceptenAdminPage {
 		}
 
 		return [
-			'naam'            => isset( $_POST['naam'] ) ? sanitize_text_field( wp_unslash( $_POST['naam'] ) ) : '',
-			'beschrijving'    => isset( $_POST['beschrijving'] ) ? sanitize_textarea_field( wp_unslash( $_POST['beschrijving'] ) ) : '',
-			'foto_id'         => isset( $_POST['foto_id'] ) ? absint( wp_unslash( $_POST['foto_id'] ) ) : 0,
-			'ingredienten'    => $this->sanitizeIngredients(),
-			'instructies'     => $this->sanitizeInstructions(),
-			'aantal_personen' => isset( $_POST['aantal_personen'] ) ? absint( wp_unslash( $_POST['aantal_personen'] ) ) : 0,
-			'bereidingstijd'  => isset( $_POST['bereidingstijd'] ) ? absint( wp_unslash( $_POST['bereidingstijd'] ) ) : 0,
-			'moeilijkheid'    => $difficulty,
-			'soort_gerecht'   => $meal_type,
+			'naam'             => isset( $_POST['naam'] ) ? sanitize_text_field( wp_unslash( $_POST['naam'] ) ) : '',
+			'beschrijving'     => isset( $_POST['beschrijving'] ) ? sanitize_textarea_field( wp_unslash( $_POST['beschrijving'] ) ) : '',
+			'foto_id'          => isset( $_POST['foto_id'] ) ? absint( wp_unslash( $_POST['foto_id'] ) ) : 0,
+			'ingredienten'     => $this->sanitizeIngredients(),
+			'instructies'      => $this->sanitizeInstructions(),
+			'aantal_personen'  => isset( $_POST['aantal_personen'] ) ? absint( wp_unslash( $_POST['aantal_personen'] ) ) : 0,
+			'bereidingstijd'   => isset( $_POST['bereidingstijd'] ) ? absint( wp_unslash( $_POST['bereidingstijd'] ) ) : 0,
+			'oven_temperatuur' => isset( $_POST['oven_temperatuur'] ) ? absint( wp_unslash( $_POST['oven_temperatuur'] ) ) : 0,
+			'moeilijkheid'     => $difficulty,
+			'soort_gerecht'    => $meal_type,
 		];
 	}
 
@@ -803,6 +808,7 @@ class ReceptenAdminPage {
 		$beschrijving      = $this->extractTemplateTagValue( $template_input, [ 'Beschrijving', 'Description' ] );
 		$aantal_personen   = $this->extractTemplateTagValue( $template_input, [ 'AantalPersonen', 'Servings', 'Personen' ] );
 		$bereidingstijd    = $this->extractTemplateTagValue( $template_input, [ 'Bereidingstijd', 'Time', 'PreparationTime' ] );
+		$oven_temperatuur  = $this->extractTemplateTagValue( $template_input, [ 'Oventemperatuur', 'OvenTemperatuur', 'OvenTemperature' ] );
 		$moeilijkheid_raw  = $this->extractTemplateTagValue( $template_input, [ 'Moeilijkheid', 'Difficulty' ] );
 		$soort_gerecht_raw = $this->extractTemplateTagValue( $template_input, [ 'SoortGerecht', 'MealType' ] );
 		$ingredienten      = $this->parseTemplateIngredients( $template_input );
@@ -836,15 +842,16 @@ class ReceptenAdminPage {
 		}
 
 		return [
-			'naam'            => sanitize_text_field( $naam ),
-			'beschrijving'    => sanitize_textarea_field( $beschrijving ),
-			'foto_id'         => 0,
-			'ingredienten'    => $ingredienten,
-			'instructies'     => $instructies,
-			'aantal_personen' => absint( $aantal_personen ),
-			'bereidingstijd'  => absint( $bereidingstijd ),
-			'moeilijkheid'    => $moeilijkheid,
-			'soort_gerecht'   => $soort_gerecht,
+			'naam'             => sanitize_text_field( $naam ),
+			'beschrijving'     => sanitize_textarea_field( $beschrijving ),
+			'foto_id'          => 0,
+			'ingredienten'     => $ingredienten,
+			'instructies'      => $instructies,
+			'aantal_personen'  => absint( $aantal_personen ),
+			'bereidingstijd'   => absint( $bereidingstijd ),
+			'oven_temperatuur' => absint( $oven_temperatuur ),
+			'moeilijkheid'     => $moeilijkheid,
+			'soort_gerecht'    => $soort_gerecht,
 		];
 	}
 
@@ -1068,6 +1075,7 @@ class ReceptenAdminPage {
 'If something is missing on the page, leave it empty or omit it (do not guess).',
 'Keep ingredient quantities, units, and names as written, but normalize units to the allowed list where possible.',
 'Keep the number of steps and their meaning exactly the same (you may split or merge slightly only if needed for clarity, but do not change content).',
+'Only set oven temperature if the page explicitly mentions one. Use Celsius as a number only.',
 'Do not add extra explanations outside the template.',
 
 'Allowed values: Moeilijkheid: makkelijk, gemiddeld, moeilijk SoortGerecht: ontbijt, lunch, diner, bijgerecht, tussendoortje, dessert, drankje Eenheden: ml, l, g, kg, tl, el, snufje, stuks, naar_smaak',
@@ -1077,6 +1085,7 @@ class ReceptenAdminPage {
 '[Beschrijving][/Beschrijving]',
 '[AantalPersonen][/AantalPersonen]',
 '[Bereidingstijd][/Bereidingstijd]',
+'[Oventemperatuur][/Oventemperatuur]',
 '[Moeilijkheid][/Moeilijkheid]',
 '[SoortGerecht][/SoortGerecht]',
 '[Ingredienten] hoeveelheid | eenheid | ingrediënt [/Ingredienten]',
@@ -1087,6 +1096,7 @@ class ReceptenAdminPage {
 '[Beschrijving]Een snelle doordeweekse pasta met veel smaak.[/Beschrijving]',
 '[AantalPersonen]4[/AantalPersonen]',
 '[Bereidingstijd]25[/Bereidingstijd]',
+'[Oventemperatuur][/Oventemperatuur]',
 '[Moeilijkheid]makkelijk[/Moeilijkheid]',
 '[SoortGerecht]diner[/SoortGerecht]',
 '[Ingredienten]',
@@ -1329,18 +1339,19 @@ class ReceptenAdminPage {
 
 	private function getEmptyRecept(): array {
 		return [
-			'id'              => 0,
-			'naam'            => '',
-			'beschrijving'    => '',
-			'foto_id'         => 0,
-			'ingredienten'    => [],
-			'instructies'     => [],
-			'aantal_personen' => 0,
-			'bereidingstijd'  => 0,
-			'moeilijkheid'    => 'makkelijk',
-			'soort_gerecht'   => 'diner',
-			'created_at'      => '',
-			'updated_at'      => '',
+			'id'               => 0,
+			'naam'             => '',
+			'beschrijving'     => '',
+			'foto_id'          => 0,
+			'ingredienten'     => [],
+			'instructies'      => [],
+			'aantal_personen'  => 0,
+			'bereidingstijd'   => 0,
+			'oven_temperatuur' => 0,
+			'moeilijkheid'     => 'makkelijk',
+			'soort_gerecht'    => 'diner',
+			'created_at'       => '',
+			'updated_at'       => '',
 		];
 	}
 

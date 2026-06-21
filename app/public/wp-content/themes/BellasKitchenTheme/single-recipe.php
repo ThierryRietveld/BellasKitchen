@@ -38,6 +38,7 @@ endif;
 $description  = (string) ( $recipe['beschrijving'] ?? '' );
 $servings     = (int) ( $recipe['aantal_personen'] ?? 0 );
 $duration     = (int) ( $recipe['bereidingstijd'] ?? 0 );
+$oven_temp    = (int) ( $recipe['oven_temperatuur'] ?? 0 );
 $difficulty   = (string) ( $recipe['moeilijkheid'] ?? '' );
 $meal_type    = (string) ( $recipe['soort_gerecht'] ?? '' );
 $ingredients  = is_array( $recipe['ingredienten'] ?? null ) ? $recipe['ingredienten'] : array();
@@ -90,6 +91,12 @@ $main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
 						<?php if ( $duration ) : ?>
 							<span class="inline-flex items-center rounded-full border border-rose-100 bg-white px-4 py-2 text-sm text-stone-700 dark:border-night-border dark:bg-night-surface dark:text-night-muted">
 								Bereidingstijd: <span class="ml-2 font-semibold"><?php echo esc_html( bellas_kitchen_format_recept_duration( $duration ) ); ?></span>
+							</span>
+						<?php endif; ?>
+
+						<?php if ( $oven_temp ) : ?>
+							<span class="inline-flex items-center rounded-full border border-rose-100 bg-white px-4 py-2 text-sm text-stone-700 dark:border-night-border dark:bg-night-surface dark:text-night-muted">
+								<img src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/oven_heat.jpeg' ); ?>" alt="Oven" class="h-6 w-6"> <span class="ml-2 font-semibold"><?php echo esc_html( $oven_temp ); ?> °C</span>
 							</span>
 						<?php endif; ?>
 

@@ -41,6 +41,7 @@ class Installer {
 			foto_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			aantal_personen int(10) unsigned NOT NULL DEFAULT 0,
 			bereidingstijd int(10) unsigned NOT NULL DEFAULT 0,
+			oven_temperatuur int(10) unsigned NOT NULL DEFAULT 0,
 			moeilijkheid varchar(50) NOT NULL DEFAULT '',
 			soort_gerecht varchar(50) NOT NULL DEFAULT '',
 			created_at datetime NOT NULL,

@@ -125,18 +125,19 @@ class ReceptRepository {
 		$table_name = Installer::getTableName();
 		$now        = current_time( 'mysql' );
 		$insert_data = [
-			'naam'            => $data['naam'],
-			'slug'            => Installer::generateUniqueSlug( $data['naam'] ),
-			'beschrijving'    => $data['beschrijving'],
-			'foto_id'         => $data['foto_id'],
-			'aantal_personen' => $data['aantal_personen'],
-			'bereidingstijd'  => $data['bereidingstijd'],
-			'moeilijkheid'    => $data['moeilijkheid'],
-			'soort_gerecht'   => $data['soort_gerecht'],
-			'created_at'      => $now,
-			'updated_at'      => $now,
+			'naam'             => $data['naam'],
+			'slug'             => Installer::generateUniqueSlug( $data['naam'] ),
+			'beschrijving'     => $data['beschrijving'],
+			'foto_id'          => $data['foto_id'],
+			'aantal_personen'  => $data['aantal_personen'],
+			'bereidingstijd'   => $data['bereidingstijd'],
+			'oven_temperatuur' => absint( $data['oven_temperatuur'] ?? 0 ),
+			'moeilijkheid'     => $data['moeilijkheid'],
+			'soort_gerecht'    => $data['soort_gerecht'],
+			'created_at'       => $now,
+			'updated_at'       => $now,
 		];
-		$formats = [ '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s' ];
+		$formats = [ '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s' ];
 
 		$this->addLegacyEmptyFields( $insert_data, $formats );
 
@@ -181,14 +182,15 @@ class ReceptRepository {
 			$formats[]          = '%s';
 		}
 
-		$update_data['beschrijving']    = $data['beschrijving'];
-		$update_data['foto_id']         = $data['foto_id'];
-		$update_data['aantal_personen'] = $data['aantal_personen'];
-		$update_data['bereidingstijd']  = $data['bereidingstijd'];
-		$update_data['moeilijkheid']    = $data['moeilijkheid'];
-		$update_data['soort_gerecht']   = $data['soort_gerecht'];
-		$update_data['updated_at']      = current_time( 'mysql' );
-		$formats                        = array_merge( $formats, [ '%s', '%d', '%d', '%d', '%s', '%s', '%s' ] );
+		$update_data['beschrijving']     = $data['beschrijving'];
+		$update_data['foto_id']          = $data['foto_id'];
+		$update_data['aantal_personen']  = $data['aantal_personen'];
+		$update_data['bereidingstijd']   = $data['bereidingstijd'];
+		$update_data['oven_temperatuur'] = absint( $data['oven_temperatuur'] ?? 0 );
+		$update_data['moeilijkheid']     = $data['moeilijkheid'];
+		$update_data['soort_gerecht']    = $data['soort_gerecht'];
+		$update_data['updated_at']       = current_time( 'mysql' );
+		$formats                         = array_merge( $formats, [ '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s' ] );
 
 		$this->addLegacyEmptyFields( $update_data, $formats );
 
