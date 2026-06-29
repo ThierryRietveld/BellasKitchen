@@ -35,16 +35,17 @@ if ( ! $recipe ) :
 	return;
 endif;
 
-$description  = (string) ( $recipe['beschrijving'] ?? '' );
-$servings     = (int) ( $recipe['aantal_personen'] ?? 0 );
-$duration     = (int) ( $recipe['bereidingstijd'] ?? 0 );
-$oven_temp    = (int) ( $recipe['oven_temperatuur'] ?? 0 );
-$difficulty   = (string) ( $recipe['moeilijkheid'] ?? '' );
-$meal_type    = (string) ( $recipe['soort_gerecht'] ?? '' );
-$ingredients  = is_array( $recipe['ingredienten'] ?? null ) ? $recipe['ingredienten'] : array();
-$instructions = is_array( $recipe['instructies'] ?? null ) ? $recipe['instructies'] : array();
-$main_url     = bellas_kitchen_get_recept_image_url( $recipe, 'large' );
-$main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
+$description    = (string) ( $recipe['beschrijving'] ?? '' );
+$servings       = (int) ( $recipe['aantal_personen'] ?? 0 );
+$servings_label = bellas_kitchen_get_recept_servings_label( $recipe );
+$duration       = (int) ( $recipe['bereidingstijd'] ?? 0 );
+$oven_temp      = (int) ( $recipe['oven_temperatuur'] ?? 0 );
+$difficulty     = (string) ( $recipe['moeilijkheid'] ?? '' );
+$meal_type      = (string) ( $recipe['soort_gerecht'] ?? '' );
+$ingredients    = is_array( $recipe['ingredienten'] ?? null ) ? $recipe['ingredienten'] : array();
+$instructions   = is_array( $recipe['instructies'] ?? null ) ? $recipe['instructies'] : array();
+$main_url       = bellas_kitchen_get_recept_image_url( $recipe, 'large' );
+$main_alt       = bellas_kitchen_get_recept_image_alt( $recipe );
 
 $ingredient_groups       = array();
 $ingredient_group_lookup = array();
@@ -125,24 +126,24 @@ foreach ( $ingredients as $ingredient ) {
 					</div>
 
 					<?php if ( $servings ) : ?>
-						<div class="rounded-[1.5rem] border border-rose-100 bg-white/90 p-5 shadow-card dark:border-night-border dark:bg-night-surface/90" data-recipe-servings data-base-servings="<?php echo esc_attr( $servings ); ?>">
+						<div class="rounded-[1.5rem] border border-rose-100 bg-white/90 p-5 shadow-card dark:border-night-border dark:bg-night-surface/90" data-recipe-servings data-base-servings="<?php echo esc_attr( $servings ); ?>" data-servings-label="<?php echo esc_attr( $servings_label ); ?>">
 							<div class="flex gap-4 flex-row sm:items-center justify-between">
 								<div>
 									<p class="text-xs font-semibold uppercase tracking-[0.24em] text-rose-500">Porties aanpassen</p>
 									<p class="mt-2 flex items-baseline gap-2 text-stone-900 dark:text-night-text">
 										<span class="font-display text-4xl leading-none" data-servings-count><?php echo esc_html( $servings ); ?></span>
-										<span class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500 dark:text-night-muted" data-servings-unit-label><?php echo esc_html( 1 === $servings ? 'persoon' : 'personen' ); ?></span>
+										<span class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500 dark:text-night-muted" data-servings-unit-label><?php echo esc_html( bellas_kitchen_format_recept_servings_label( $servings, $servings_label ) ); ?></span>
 									</p>
 								</div>
 
 								<div class="inline-flex items-center rounded-full border max-w-[11.5rem] border-rose-200 bg-white shadow-sm dark:border-night-border dark:bg-night-page">
-									<button type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-l-full text-xl font-semibold text-stone-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated" data-servings-decrease aria-label="Verlaag aantal personen">
+									<button type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-l-full text-xl font-semibold text-stone-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated" data-servings-decrease aria-label="<?php echo esc_attr( sprintf( 'Verlaag aantal %s', $servings_label ) ); ?>">
 										<span aria-hidden="true">&minus;</span>
 									</button>
 									<div class="min-w-[5rem] px-4 text-center text-base font-semibold text-stone-900 dark:text-night-text" data-servings-display>
 										<?php echo esc_html( $servings ); ?>
 									</div>
-									<button type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-r-full text-xl font-semibold text-stone-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated" data-servings-increase aria-label="Verhoog aantal personen">
+									<button type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-r-full text-xl font-semibold text-stone-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-night-textSoft dark:hover:bg-night-surfaceElevated" data-servings-increase aria-label="<?php echo esc_attr( sprintf( 'Verhoog aantal %s', $servings_label ) ); ?>">
 										<span aria-hidden="true">+</span>
 									</button>
 								</div>
@@ -159,7 +160,7 @@ foreach ( $ingredients as $ingredient ) {
 							<div class="flex flex-col gap-2">
 								<h2 class="font-display text-2xl font-semibold text-stone-900 dark:text-night-text">Ingrediënten</h2>
 								<?php if ( $servings ) : ?>
-									<p class="text-sm text-stone-600 dark:text-night-muted">Voor <span class="font-semibold text-stone-900 dark:text-night-text" data-servings-summary><?php echo esc_html( bellas_kitchen_format_recept_servings( $servings ) ); ?></span></p>
+									<p class="text-sm text-stone-600 dark:text-night-muted">Voor <span class="font-semibold text-stone-900 dark:text-night-text" data-servings-summary><?php echo esc_html( bellas_kitchen_format_recept_servings( $servings, $servings_label ) ); ?></span></p>
 								<?php endif; ?>
 							</div>
 							<div class="mt-4 space-y-6 rounded-2xl border border-rose-100 bg-white/80 p-6 dark:border-night-border dark:bg-night-surface/90">

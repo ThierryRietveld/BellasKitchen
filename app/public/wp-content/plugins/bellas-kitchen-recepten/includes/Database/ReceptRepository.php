@@ -122,22 +122,30 @@ class ReceptRepository {
 	public function create( array $data ): int {
 		global $wpdb;
 
-		$table_name = Installer::getTableName();
-		$now        = current_time( 'mysql' );
+		$table_name         = Installer::getTableName();
+		$has_servings_label = Installer::hasServingsLabelColumn();
+		$now                = current_time( 'mysql' );
 		$insert_data = [
-			'naam'             => $data['naam'],
-			'slug'             => Installer::generateUniqueSlug( $data['naam'] ),
-			'beschrijving'     => $data['beschrijving'],
-			'foto_id'          => $data['foto_id'],
-			'aantal_personen'  => $data['aantal_personen'],
-			'bereidingstijd'   => $data['bereidingstijd'],
-			'oven_temperatuur' => absint( $data['oven_temperatuur'] ?? 0 ),
-			'moeilijkheid'     => $data['moeilijkheid'],
-			'soort_gerecht'    => $data['soort_gerecht'],
-			'created_at'       => $now,
-			'updated_at'       => $now,
+			'naam'            => $data['naam'],
+			'slug'            => Installer::generateUniqueSlug( $data['naam'] ),
+			'beschrijving'    => $data['beschrijving'],
+			'foto_id'         => $data['foto_id'],
+			'aantal_personen' => $data['aantal_personen'],
 		];
-		$formats = [ '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s' ];
+		$formats     = [ '%s', '%s', '%s', '%d', '%d' ];
+
+		if ( $has_servings_label ) {
+			$insert_data['aantal_personen_label'] = $this->normalizeServingsLabel( $data['aantal_personen_label'] ?? '' );
+			$formats[]                            = '%s';
+		}
+
+		$insert_data['bereidingstijd']   = $data['bereidingstijd'];
+		$insert_data['oven_temperatuur'] = absint( $data['oven_temperatuur'] ?? 0 );
+		$insert_data['moeilijkheid']     = $data['moeilijkheid'];
+		$insert_data['soort_gerecht']    = $data['soort_gerecht'];
+		$insert_data['created_at']       = $now;
+		$insert_data['updated_at']       = $now;
+		$formats                         = array_merge( $formats, [ '%d', '%d', '%s', '%s', '%s', '%s' ] );
 
 		$this->addLegacyEmptyFields( $insert_data, $formats );
 
@@ -165,8 +173,9 @@ class ReceptRepository {
 	public function update( int $id, array $data ): bool {
 		global $wpdb;
 
-		$table_name = Installer::getTableName();
-		$existing   = $this->find( $id );
+		$table_name         = Installer::getTableName();
+		$has_servings_label = Installer::hasServingsLabelColumn();
+		$existing           = $this->find( $id );
 
 		if ( ! $existing ) {
 			return false;
@@ -185,12 +194,20 @@ class ReceptRepository {
 		$update_data['beschrijving']     = $data['beschrijving'];
 		$update_data['foto_id']          = $data['foto_id'];
 		$update_data['aantal_personen']  = $data['aantal_personen'];
+		if ( $has_servings_label ) {
+			$update_data['aantal_personen_label'] = $this->normalizeServingsLabel( $data['aantal_personen_label'] ?? '' );
+		}
 		$update_data['bereidingstijd']   = $data['bereidingstijd'];
 		$update_data['oven_temperatuur'] = absint( $data['oven_temperatuur'] ?? 0 );
 		$update_data['moeilijkheid']     = $data['moeilijkheid'];
 		$update_data['soort_gerecht']    = $data['soort_gerecht'];
 		$update_data['updated_at']       = current_time( 'mysql' );
-		$formats                         = array_merge( $formats, [ '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s' ] );
+		$formats                         = array_merge(
+			$formats,
+			$has_servings_label
+				? [ '%s', '%d', '%d', '%s', '%d', '%d', '%s', '%s', '%s' ]
+				: [ '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s' ]
+		);
 
 		$this->addLegacyEmptyFields( $update_data, $formats );
 
@@ -246,6 +263,8 @@ class ReceptRepository {
 
 		$row['ingredienten'] = $this->getIngredients( $recept_id );
 		$row['instructies']  = $this->getInstructions( $recept_id );
+
+		$row['aantal_personen_label'] = $this->normalizeServingsLabel( $row['aantal_personen_label'] ?? '' );
 
 		if ( empty( $row['ingredienten'] ) && is_string( $legacy_ingredients ) && $legacy_ingredients !== '' ) {
 			$row['ingredienten'] = $this->parseLegacyIngredients( $legacy_ingredients );
@@ -459,6 +478,18 @@ class ReceptRepository {
 		}
 
 		return $instructions;
+	}
+
+	private function normalizeServingsLabel( $label ): string {
+		if ( ! is_scalar( $label ) ) {
+			return 'personen';
+		}
+
+		$label = sanitize_text_field( (string) $label );
+		$label = function_exists( 'mb_substr' ) ? mb_substr( $label, 0, 100 ) : substr( $label, 0, 100 );
+		$label = trim( $label );
+
+		return '' !== $label ? $label : 'personen';
 	}
 
 	private function sanitizeScalarText( $value ): string {

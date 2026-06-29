@@ -40,6 +40,7 @@ class Installer {
 			beschrijving longtext NOT NULL,
 			foto_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			aantal_personen int(10) unsigned NOT NULL DEFAULT 0,
+			aantal_personen_label varchar(100) NOT NULL DEFAULT 'personen',
 			bereidingstijd int(10) unsigned NOT NULL DEFAULT 0,
 			oven_temperatuur int(10) unsigned NOT NULL DEFAULT 0,
 			moeilijkheid varchar(50) NOT NULL DEFAULT '',
@@ -119,6 +120,10 @@ class Installer {
 
 	public static function hasIngredientCategoryColumn(): bool {
 		return self::columnExists( self::getIngredientsTableName(), 'category' );
+	}
+
+	public static function hasServingsLabelColumn(): bool {
+		return self::columnExists( self::getTableName(), 'aantal_personen_label' );
 	}
 
 	private static function migrateLegacyJsonFields(): void {

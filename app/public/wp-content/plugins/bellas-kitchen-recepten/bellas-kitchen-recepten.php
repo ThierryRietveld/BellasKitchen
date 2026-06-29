@@ -3,7 +3,7 @@
  * Plugin Name: Bella's Kitchen Recepten
  * Plugin URI:  https://bellaskitchen.nl
  * Description: Beheer recepten in een eigen WordPress database tabel.
- * Version:     1.5.0
+ * Version:     1.5.1
  * Author:      Thierry Rietveld
  * License:     GPL-2.0-or-later
  * Text Domain: bellas-kitchen-recepten
@@ -15,8 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BKR_RECEPTEN_VERSION', '1.5.0' );
-define( 'BKR_RECEPTEN_DB_VERSION', '1.5.0' );
+define( 'BKR_RECEPTEN_VERSION', '1.5.1' );
+define( 'BKR_RECEPTEN_DB_VERSION', '1.5.1' );
 define( 'BKR_RECEPTEN_PLUGIN_FILE', __FILE__ );
 define( 'BKR_RECEPTEN_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BKR_RECEPTEN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

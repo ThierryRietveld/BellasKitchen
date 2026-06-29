@@ -200,7 +200,17 @@
 		return unitLabel ? formatScaledQuantity( singleValue * ratio, unitKey ) + ' ' + unitLabel : formatScaledQuantity( singleValue * ratio, unitKey );
 	}
 
-	function formatServingsLabel( servings ) {
+	function formatServingsLabel( servings, label ) {
+		label = String( label || '' ).trim();
+
+		if ( label ) {
+			if ( 1 === servings && 'personen' === label.toLowerCase() ) {
+				return 'persoon';
+			}
+
+			return label;
+		}
+
 		return 1 === servings ? 'persoon' : 'personen';
 	}
 
@@ -231,6 +241,7 @@
 		var countElement;
 		var labelElement;
 		var summaryElement;
+		var servingsLabel;
 		var ingredientRows;
 
 		if ( ! servingsRoot ) {
@@ -244,6 +255,7 @@
 		}
 
 		currentServings = baseServings;
+		servingsLabel = servingsRoot.getAttribute( 'data-servings-label' ) || '';
 		decreaseButton = servingsRoot.querySelector( '[data-servings-decrease]' );
 		increaseButton = servingsRoot.querySelector( '[data-servings-increase]' );
 		displayElement = servingsRoot.querySelector( '[data-servings-display]' );
@@ -264,11 +276,11 @@
 			}
 
 			if ( labelElement ) {
-				labelElement.textContent = formatServingsLabel( currentServings );
+				labelElement.textContent = formatServingsLabel( currentServings, servingsLabel );
 			}
 
 			if ( summaryElement ) {
-				summaryElement.textContent = currentServings + ' ' + formatServingsLabel( currentServings );
+				summaryElement.textContent = currentServings + ' ' + formatServingsLabel( currentServings, servingsLabel );
 			}
 
 			if ( decreaseButton ) {

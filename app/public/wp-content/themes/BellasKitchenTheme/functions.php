@@ -517,13 +517,44 @@ function bellas_kitchen_format_recept_duration( int $minutes ): string {
 /**
  * Format servings for display.
  */
-function bellas_kitchen_format_recept_servings( int $servings ): string {
+function bellas_kitchen_format_recept_servings( int $servings, string $label = '' ): string {
 	if ( $servings <= 0 ) {
 		return '';
 	}
 
-	return sprintf(
-		_n( '%d persoon', '%d personen', $servings, 'bellas-kitchen-theme' ),
-		$servings
-	);
+	$label = bellas_kitchen_format_recept_servings_label( $servings, $label );
+
+	return sprintf( '%d %s', $servings, $label );
+}
+
+/**
+ * Format the servings label for display.
+ */
+function bellas_kitchen_format_recept_servings_label( int $servings, string $label = '' ): string {
+	$default_label = bellas_kitchen_get_default_recept_servings_label();
+	$label         = '' !== trim( $label ) ? trim( $label ) : $default_label;
+
+	if ( 1 === $servings && 0 === strcasecmp( $label, $default_label ) ) {
+		return __( 'persoon', 'bellas-kitchen-theme' );
+	}
+
+	return $label;
+}
+
+/**
+ * Get the servings label for a recept.
+ */
+function bellas_kitchen_get_recept_servings_label( array $recept ): string {
+	$label = sanitize_text_field( (string) ( $recept['aantal_personen_label'] ?? '' ) );
+	$label = function_exists( 'mb_substr' ) ? mb_substr( $label, 0, 100 ) : substr( $label, 0, 100 );
+	$label = trim( $label );
+
+	return '' !== $label ? $label : bellas_kitchen_get_default_recept_servings_label();
+}
+
+/**
+ * Get the default servings label.
+ */
+function bellas_kitchen_get_default_recept_servings_label(): string {
+	return __( 'personen', 'bellas-kitchen-theme' );
 }

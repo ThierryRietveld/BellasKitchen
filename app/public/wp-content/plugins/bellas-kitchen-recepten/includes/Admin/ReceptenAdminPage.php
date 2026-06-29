@@ -182,7 +182,7 @@ class ReceptenAdminPage {
 						<th scope="col" class="column-image"><?php esc_html_e( 'Foto', 'bellas-kitchen-recepten' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Naam', 'bellas-kitchen-recepten' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Soort gerecht', 'bellas-kitchen-recepten' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Aantal personen', 'bellas-kitchen-recepten' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Aantal', 'bellas-kitchen-recepten' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Moeilijkheid', 'bellas-kitchen-recepten' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Bereidingstijd', 'bellas-kitchen-recepten' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Bijgewerkt', 'bellas-kitchen-recepten' ); ?></th>
@@ -467,7 +467,7 @@ class ReceptenAdminPage {
 				</div>
 			</td>
 			<td><?php echo esc_html( $this->getMealTypeLabel( $recept['soort_gerecht'] ) ); ?></td>
-			<td><?php echo esc_html( $this->formatServings( absint( $recept['aantal_personen'] ?? 0 ) ) ); ?></td>
+			<td><?php echo esc_html( $this->formatServings( absint( $recept['aantal_personen'] ?? 0 ), $this->getServingsLabel( $recept ) ) ); ?></td>
 			<td><?php echo esc_html( $this->getDifficultyLabel( $recept['moeilijkheid'] ) ); ?></td>
 			<td>
 				<?php
@@ -488,12 +488,13 @@ class ReceptenAdminPage {
 			wp_die( esc_html__( 'Je hebt geen rechten om deze pagina te bekijken.', 'bellas-kitchen-recepten' ) );
 		}
 
-		$title        = $is_edit ? __( 'Recept bewerken', 'bellas-kitchen-recepten' ) : __( 'Recept toevoegen', 'bellas-kitchen-recepten' );
-		$foto_id      = absint( $recept['foto_id'] );
-		$foto_html    = $this->getImageHtml( $foto_id, 'medium' );
-		$ingredienten = $this->getIngredientsForForm( $recept['ingredienten'] );
-		$instructies  = $this->getInstructionsForForm( $recept['instructies'] );
-		$units        = $this->getUnits();
+		$title          = $is_edit ? __( 'Recept bewerken', 'bellas-kitchen-recepten' ) : __( 'Recept toevoegen', 'bellas-kitchen-recepten' );
+		$foto_id        = absint( $recept['foto_id'] );
+		$foto_html      = $this->getImageHtml( $foto_id, 'medium' );
+		$ingredienten   = $this->getIngredientsForForm( $recept['ingredienten'] );
+		$instructies    = $this->getInstructionsForForm( $recept['instructies'] );
+		$servings_label = $this->getServingsLabel( $recept );
+		$units          = $this->getUnits();
 		?>
 		<div class="wrap bkr-recepten-admin">
 			<h1><?php echo esc_html( $title ); ?></h1>
@@ -613,8 +614,13 @@ class ReceptenAdminPage {
 							<h2 class="hndle"><?php esc_html_e( 'Receptgegevens', 'bellas-kitchen-recepten' ); ?></h2>
 							<div class="inside">
 								<p>
-									<label for="bkr-aantal-personen"><?php esc_html_e( 'Aantal personen', 'bellas-kitchen-recepten' ); ?></label>
+									<label for="bkr-aantal-personen"><?php esc_html_e( 'Aantal', 'bellas-kitchen-recepten' ); ?></label>
 									<input type="number" id="bkr-aantal-personen" name="aantal_personen" min="1" step="1" class="small-text" value="<?php echo esc_attr( $this->getNumberInputValue( absint( $recept['aantal_personen'] ?? 0 ) ) ); ?>">
+								</p>
+								<p>
+									<label for="bkr-aantal-personen-label"><?php esc_html_e( 'Label voor aantal', 'bellas-kitchen-recepten' ); ?></label>
+									<input type="text" id="bkr-aantal-personen-label" name="aantal_personen_label" maxlength="100" style="width: 100%;" value="<?php echo esc_attr( $servings_label ); ?>">
+									<span class="description"><?php esc_html_e( 'Bijvoorbeeld personen, porties of stuks.', 'bellas-kitchen-recepten' ); ?></span>
 								</p>
 								<p>
 									<label for="bkr-bereidingstijd"><?php esc_html_e( 'Bereidingstijd (minuten)', 'bellas-kitchen-recepten' ); ?></label>
@@ -788,16 +794,17 @@ class ReceptenAdminPage {
 		}
 
 		return [
-			'naam'             => isset( $_POST['naam'] ) ? sanitize_text_field( wp_unslash( $_POST['naam'] ) ) : '',
-			'beschrijving'     => isset( $_POST['beschrijving'] ) ? sanitize_textarea_field( wp_unslash( $_POST['beschrijving'] ) ) : '',
-			'foto_id'          => isset( $_POST['foto_id'] ) ? absint( wp_unslash( $_POST['foto_id'] ) ) : 0,
-			'ingredienten'     => $this->sanitizeIngredients(),
-			'instructies'      => $this->sanitizeInstructions(),
-			'aantal_personen'  => isset( $_POST['aantal_personen'] ) ? absint( wp_unslash( $_POST['aantal_personen'] ) ) : 0,
-			'bereidingstijd'   => isset( $_POST['bereidingstijd'] ) ? absint( wp_unslash( $_POST['bereidingstijd'] ) ) : 0,
-			'oven_temperatuur' => isset( $_POST['oven_temperatuur'] ) ? absint( wp_unslash( $_POST['oven_temperatuur'] ) ) : 0,
-			'moeilijkheid'     => $difficulty,
-			'soort_gerecht'    => $meal_type,
+			'naam'                  => isset( $_POST['naam'] ) ? sanitize_text_field( wp_unslash( $_POST['naam'] ) ) : '',
+			'beschrijving'          => isset( $_POST['beschrijving'] ) ? sanitize_textarea_field( wp_unslash( $_POST['beschrijving'] ) ) : '',
+			'foto_id'               => isset( $_POST['foto_id'] ) ? absint( wp_unslash( $_POST['foto_id'] ) ) : 0,
+			'ingredienten'          => $this->sanitizeIngredients(),
+			'instructies'           => $this->sanitizeInstructions(),
+			'aantal_personen'       => isset( $_POST['aantal_personen'] ) ? absint( wp_unslash( $_POST['aantal_personen'] ) ) : 0,
+			'aantal_personen_label' => isset( $_POST['aantal_personen_label'] ) ? $this->sanitizeServingsLabel( wp_unslash( $_POST['aantal_personen_label'] ) ) : $this->getDefaultServingsLabel(),
+			'bereidingstijd'        => isset( $_POST['bereidingstijd'] ) ? absint( wp_unslash( $_POST['bereidingstijd'] ) ) : 0,
+			'oven_temperatuur'      => isset( $_POST['oven_temperatuur'] ) ? absint( wp_unslash( $_POST['oven_temperatuur'] ) ) : 0,
+			'moeilijkheid'          => $difficulty,
+			'soort_gerecht'         => $meal_type,
 		];
 	}
 
@@ -811,15 +818,16 @@ class ReceptenAdminPage {
 			);
 		}
 
-		$naam              = $this->extractTemplateTagValue( $template_input, [ 'Naam', 'Name', 'Title' ] );
-		$beschrijving      = $this->extractTemplateTagValue( $template_input, [ 'Beschrijving', 'Description' ] );
-		$aantal_personen   = $this->extractTemplateTagValue( $template_input, [ 'AantalPersonen', 'Servings', 'Personen' ] );
-		$bereidingstijd    = $this->extractTemplateTagValue( $template_input, [ 'Bereidingstijd', 'Time', 'PreparationTime' ] );
-		$oven_temperatuur  = $this->extractTemplateTagValue( $template_input, [ 'Oventemperatuur', 'OvenTemperatuur', 'OvenTemperature' ] );
-		$moeilijkheid_raw  = $this->extractTemplateTagValue( $template_input, [ 'Moeilijkheid', 'Difficulty' ] );
-		$soort_gerecht_raw = $this->extractTemplateTagValue( $template_input, [ 'SoortGerecht', 'MealType' ] );
-		$ingredienten      = $this->parseTemplateIngredients( $template_input );
-		$instructies       = $this->parseTemplateInstructions( $template_input );
+		$naam                  = $this->extractTemplateTagValue( $template_input, [ 'Naam', 'Name', 'Title' ] );
+		$beschrijving          = $this->extractTemplateTagValue( $template_input, [ 'Beschrijving', 'Description' ] );
+		$aantal_personen       = $this->extractTemplateTagValue( $template_input, [ 'AantalPersonen', 'Servings', 'Personen' ] );
+		$aantal_personen_label = $this->extractTemplateTagValue( $template_input, [ 'AantalPersonenLabel', 'ServingsLabel', 'PortieLabel', 'PortiesLabel' ] );
+		$bereidingstijd        = $this->extractTemplateTagValue( $template_input, [ 'Bereidingstijd', 'Time', 'PreparationTime' ] );
+		$oven_temperatuur      = $this->extractTemplateTagValue( $template_input, [ 'Oventemperatuur', 'OvenTemperatuur', 'OvenTemperature' ] );
+		$moeilijkheid_raw      = $this->extractTemplateTagValue( $template_input, [ 'Moeilijkheid', 'Difficulty' ] );
+		$soort_gerecht_raw     = $this->extractTemplateTagValue( $template_input, [ 'SoortGerecht', 'MealType' ] );
+		$ingredienten          = $this->parseTemplateIngredients( $template_input );
+		$instructies           = $this->parseTemplateInstructions( $template_input );
 
 		if ( '' === $naam ) {
 			return new \WP_Error(
@@ -849,16 +857,17 @@ class ReceptenAdminPage {
 		}
 
 		return [
-			'naam'             => sanitize_text_field( $naam ),
-			'beschrijving'     => sanitize_textarea_field( $beschrijving ),
-			'foto_id'          => 0,
-			'ingredienten'     => $ingredienten,
-			'instructies'      => $instructies,
-			'aantal_personen'  => absint( $aantal_personen ),
-			'bereidingstijd'   => absint( $bereidingstijd ),
-			'oven_temperatuur' => absint( $oven_temperatuur ),
-			'moeilijkheid'     => $moeilijkheid,
-			'soort_gerecht'    => $soort_gerecht,
+			'naam'                  => sanitize_text_field( $naam ),
+			'beschrijving'          => sanitize_textarea_field( $beschrijving ),
+			'foto_id'               => 0,
+			'ingredienten'          => $ingredienten,
+			'instructies'           => $instructies,
+			'aantal_personen'       => absint( $aantal_personen ),
+			'aantal_personen_label' => $this->sanitizeServingsLabel( $aantal_personen_label ),
+			'bereidingstijd'        => absint( $bereidingstijd ),
+			'oven_temperatuur'      => absint( $oven_temperatuur ),
+			'moeilijkheid'          => $moeilijkheid,
+			'soort_gerecht'         => $soort_gerecht,
 		];
 	}
 
@@ -1462,19 +1471,20 @@ class ReceptenAdminPage {
 
 	private function getEmptyRecept(): array {
 		return [
-			'id'               => 0,
-			'naam'             => '',
-			'beschrijving'     => '',
-			'foto_id'          => 0,
-			'ingredienten'     => [],
-			'instructies'      => [],
-			'aantal_personen'  => 0,
-			'bereidingstijd'   => 0,
-			'oven_temperatuur' => 0,
-			'moeilijkheid'     => 'makkelijk',
-			'soort_gerecht'    => 'diner',
-			'created_at'       => '',
-			'updated_at'       => '',
+			'id'                    => 0,
+			'naam'                  => '',
+			'beschrijving'          => '',
+			'foto_id'               => 0,
+			'ingredienten'          => [],
+			'instructies'           => [],
+			'aantal_personen'       => 0,
+			'aantal_personen_label' => $this->getDefaultServingsLabel(),
+			'bereidingstijd'        => 0,
+			'oven_temperatuur'      => 0,
+			'moeilijkheid'          => 'makkelijk',
+			'soort_gerecht'         => 'diner',
+			'created_at'            => '',
+			'updated_at'            => '',
 		];
 	}
 
@@ -1572,16 +1582,48 @@ class ReceptenAdminPage {
 		return $meal_types[ $value ] ?? $value;
 	}
 
-	private function formatServings( int $servings ): string {
+	private function formatServings( int $servings, string $label = '' ): string {
 		if ( $servings <= 0 ) {
 			return '-';
 		}
 
-		return sprintf(
-			/* translators: %d: number of people. */
-			_n( '%d persoon', '%d personen', $servings, 'bellas-kitchen-recepten' ),
-			$servings
-		);
+		$label = $this->formatServingsLabel( $servings, $label );
+
+		return sprintf( '%d %s', $servings, $label );
+	}
+
+	private function formatServingsLabel( int $servings, string $label = '' ): string {
+		$label = '' !== trim( $label ) ? trim( $label ) : $this->getDefaultServingsLabel();
+
+		if ( 1 === $servings && 0 === strcasecmp( $label, $this->getDefaultServingsLabel() ) ) {
+			return $this->getSingularDefaultServingsLabel();
+		}
+
+		return $label;
+	}
+
+	private function getServingsLabel( array $recept ): string {
+		return $this->sanitizeServingsLabel( $recept['aantal_personen_label'] ?? '' );
+	}
+
+	private function sanitizeServingsLabel( $label ): string {
+		if ( ! is_scalar( $label ) ) {
+			return $this->getDefaultServingsLabel();
+		}
+
+		$label = sanitize_text_field( (string) $label );
+		$label = function_exists( 'mb_substr' ) ? mb_substr( $label, 0, 100 ) : substr( $label, 0, 100 );
+		$label = trim( $label );
+
+		return '' !== $label ? $label : $this->getDefaultServingsLabel();
+	}
+
+	private function getDefaultServingsLabel(): string {
+		return __( 'personen', 'bellas-kitchen-recepten' );
+	}
+
+	private function getSingularDefaultServingsLabel(): string {
+		return __( 'persoon', 'bellas-kitchen-recepten' );
 	}
 
 	private function getNumberInputValue( int $value ): string {
