@@ -528,6 +528,12 @@ class ReceptenAdminPage {
 											<?php foreach ( $ingredienten as $index => $ingredient ) : ?>
 												<div class="bkr-ingredient-row">
 													<input type="text"
+														name="ingredienten[<?php echo esc_attr( $index ); ?>][category]"
+														value="<?php echo esc_attr( $ingredient['category'] ); ?>"
+														placeholder="<?php esc_attr_e( 'Categorie', 'bellas-kitchen-recepten' ); ?>"
+														maxlength="100"
+														class="regular-text bkr-ingredient-category">
+													<input type="text"
 														name="ingredienten[<?php echo esc_attr( $index ); ?>][quantity]"
 														value="<?php echo esc_attr( $ingredient['quantity'] ); ?>"
 														placeholder="<?php esc_attr_e( 'Hoeveelheid', 'bellas-kitchen-recepten' ); ?>"
@@ -555,6 +561,7 @@ class ReceptenAdminPage {
 
 										<script type="text/template" id="bkr-ingredient-template">
 											<div class="bkr-ingredient-row">
+												<input type="text" name="ingredienten[{{index}}][category]" value="" placeholder="<?php esc_attr_e( 'Categorie', 'bellas-kitchen-recepten' ); ?>" maxlength="100" class="regular-text bkr-ingredient-category">
 												<input type="text" name="ingredienten[{{index}}][quantity]" value="" placeholder="<?php esc_attr_e( 'Hoeveelheid', 'bellas-kitchen-recepten' ); ?>" class="bkr-ingredient-quantity">
 												<select name="ingredienten[{{index}}][unit]" class="bkr-ingredient-unit">
 													<?php foreach ( $units as $value => $label ) : ?>
@@ -868,10 +875,25 @@ class ReceptenAdminPage {
 			$ingredient_lines = preg_split( '/\r\n|\r|\n/', $ingredienten_block );
 		}
 
-		$ingredienten = [];
+		$ingredienten     = [];
+		$current_category = '';
 
 		foreach ( $ingredient_lines as $ingredient_line ) {
-			$ingredient = $this->parseTemplateIngredientEntry( $ingredient_line );
+			$category_group = $this->parseTemplateIngredientCategoryGroup( $ingredient_line );
+
+			if ( null !== $category_group ) {
+				$ingredienten = array_merge( $ingredienten, $category_group );
+				continue;
+			}
+
+			$category_heading = $this->parseTemplateIngredientCategoryHeading( $ingredient_line );
+
+			if ( null !== $category_heading ) {
+				$current_category = $category_heading;
+				continue;
+			}
+
+			$ingredient = $this->parseTemplateIngredientEntry( $ingredient_line, $current_category );
 
 			if ( null === $ingredient ) {
 				continue;
@@ -911,15 +933,95 @@ class ReceptenAdminPage {
 		return $instructies;
 	}
 
-	private function parseTemplateIngredientEntry( string $ingredient_line ): ?array {
+	private function parseTemplateIngredientCategoryGroup( string $ingredient_line ): ?array {
 		$ingredient_line = trim( $ingredient_line );
+
+		if ( '' === $ingredient_line || false !== strpos( $ingredient_line, '|' ) ) {
+			return null;
+		}
+
+		$ingredient_line = trim( $ingredient_line, "[] \t\n\r\0\x0B" );
+
+		if ( ! preg_match( '/^([^:]+):\s*(.+)$/u', $ingredient_line, $matches ) ) {
+			return null;
+		}
+
+		$category = $this->sanitizeIngredientCategoryValue( $matches[1] );
+		$items    = array_map( 'trim', explode( ',', $matches[2] ) );
+
+		if ( '' === $category || empty( $items ) ) {
+			return null;
+		}
+
+		$ingredients = [];
+
+		foreach ( $items as $item ) {
+			$item = $this->sanitizeIngredientTextValue( $item );
+
+			if ( '' === $item ) {
+				continue;
+			}
+
+			$ingredients[] = [
+				'category' => $category,
+				'quantity' => '',
+				'unit'     => '',
+				'item'     => $item,
+			];
+		}
+
+		return ! empty( $ingredients ) ? $ingredients : null;
+	}
+
+	private function parseTemplateIngredientCategoryHeading( string $ingredient_line ): ?string {
+		$ingredient_line = trim( $ingredient_line );
+
+		if ( '' === $ingredient_line || false !== strpos( $ingredient_line, '|' ) ) {
+			return null;
+		}
+
+		if ( preg_match( '/^\[?([^:\[\]]+):\]?$/u', $ingredient_line, $matches ) || preg_match( '/^\[([^\[\]]+)\]$/u', $ingredient_line, $matches ) ) {
+			$category = $this->sanitizeIngredientCategoryValue( $matches[1] );
+
+			return '' !== $category ? $category : null;
+		}
+
+		return null;
+	}
+
+	private function parseTemplateIngredientEntry( string $ingredient_line, string $category = '' ): ?array {
+		$ingredient_line = trim( $ingredient_line );
+		$category        = $this->sanitizeIngredientCategoryValue( $category );
 
 		if ( '' === $ingredient_line ) {
 			return null;
 		}
 
 		if ( false !== strpos( $ingredient_line, '|' ) ) {
-			$parts = array_map( 'trim', explode( '|', $ingredient_line, 3 ) );
+			$parts = array_map( 'trim', explode( '|', $ingredient_line, 4 ) );
+
+			if ( 4 === count( $parts ) ) {
+				$entry_category = $this->sanitizeIngredientCategoryValue( $parts[0] );
+				$quantity       = $this->sanitizeIngredientTextValue( $parts[1] );
+				$unit           = $this->sanitizeIngredientKeyValue( $parts[2] );
+				$item           = $this->sanitizeIngredientTextValue( $parts[3] );
+
+				if ( ! array_key_exists( $unit, $this->getUnits() ) ) {
+					$item = $this->sanitizeIngredientTextValue( trim( $parts[2] . ' ' . $parts[3] ) );
+					$unit = '';
+				}
+
+				if ( '' === $item ) {
+					return null;
+				}
+
+				return [
+					'category' => '' !== $entry_category ? $entry_category : $category,
+					'quantity' => $quantity,
+					'unit'     => $unit,
+					'item'     => $item,
+				];
+			}
 
 			if ( 3 === count( $parts ) ) {
 				$quantity = $this->sanitizeIngredientTextValue( $parts[0] );
@@ -936,6 +1038,7 @@ class ReceptenAdminPage {
 				}
 
 				return [
+					'category' => $category,
 					'quantity' => $quantity,
 					'unit'     => $unit,
 					'item'     => $item,
@@ -950,6 +1053,7 @@ class ReceptenAdminPage {
 				}
 
 				return [
+					'category' => $category,
 					'quantity' => $this->sanitizeIngredientTextValue( $parts[0] ),
 					'unit'     => '',
 					'item'     => $item,
@@ -960,11 +1064,14 @@ class ReceptenAdminPage {
 		$parsed = $this->parseIngredientLine( $ingredient_line );
 
 		if ( '' !== $parsed['quantity'] || '' !== $parsed['unit'] || $parsed['item'] !== $ingredient_line ) {
+			$parsed['category'] = $category;
+
 			return $parsed;
 		}
 
 		if ( preg_match( '/^(\S+)\s+(.+)$/', $ingredient_line, $matches ) ) {
 			return [
+				'category' => $category,
 				'quantity' => $this->sanitizeIngredientTextValue( $matches[1] ),
 				'unit'     => '',
 				'item'     => $this->sanitizeIngredientTextValue( $matches[2] ),
@@ -972,6 +1079,7 @@ class ReceptenAdminPage {
 		}
 
 		return [
+			'category' => $category,
 			'quantity' => '',
 			'unit'     => '',
 			'item'     => $this->sanitizeIngredientTextValue( $ingredient_line ),
@@ -1074,6 +1182,7 @@ class ReceptenAdminPage {
 'Only use information explicitly present on the page.',
 'If something is missing on the page, leave it empty or omit it (do not guess).',
 'Keep ingredient quantities, units, and names as written, but normalize units to the allowed list where possible.',
+'If ingredients are grouped under headings like sauce, topping, dough, vulling, or garnering, keep that heading as the ingredient category.',
 'Keep the number of steps and their meaning exactly the same (you may split or merge slightly only if needed for clarity, but do not change content).',
 'Only set oven temperature if the page explicitly mentions one. Use Celsius as a number only.',
 'Do not add extra explanations outside the template.',
@@ -1088,7 +1197,7 @@ class ReceptenAdminPage {
 '[Oventemperatuur][/Oventemperatuur]',
 '[Moeilijkheid][/Moeilijkheid]',
 '[SoortGerecht][/SoortGerecht]',
-'[Ingredienten] hoeveelheid | eenheid | ingrediënt [/Ingredienten]',
+'[Ingredienten] categorie | hoeveelheid | eenheid | ingrediënt [/Ingredienten]',
 '[Stappen] stap [/Stappen]',
 
 'Example template:',
@@ -1100,13 +1209,13 @@ class ReceptenAdminPage {
 '[Moeilijkheid]makkelijk[/Moeilijkheid]',
 '[SoortGerecht]diner[/SoortGerecht]',
 '[Ingredienten]',
-'2 | el | olijfoli,e',
-'1 | | ui',
-'2 | stuks | knoflooktenen',
-'250 | g | pasta',
-'200 | ml | kookroom',
-'150 | g | spinazie naar smaak',
-'| | peper en zout',
+'Basis | 2 | el | olijfolie',
+'Basis | 1 | | ui',
+'Basis | 2 | stuks | knoflooktenen',
+'Basis | 250 | g | pasta',
+'Saus | 200 | ml | kookroom',
+'Saus | 150 | g | spinazie naar smaak',
+'Saus | | | peper en zout',
 '[/Ingredienten]',
 '[Stappen]',
 'Fruit de ui en knoflook in de olie.',
@@ -1117,7 +1226,8 @@ class ReceptenAdminPage {
 
 'Additional rules:',
 'Convert ranges like "1-2 tl" into a single line (keep original format if unclear).',
-'If “naar smaak” is mentioned, use: naar_smaak | | ingrediënt',
+'If “naar smaak” is mentioned, use: categorie | | naar_smaak | ingrediënt (leave categorie empty if none is given).',
+'If no ingredient category is given, leave the category field empty.',
 'If no unit is given, leave the unit field empty.',
 'Keep ordering exactly the same as on the page.',
 'Strip unnecessary text like tips, ads, or story content.',
@@ -1153,6 +1263,7 @@ class ReceptenAdminPage {
 			}
 
 			$ingredients[] = [
+				'category' => $this->sanitizeIngredientCategoryValue( $row['category'] ?? '' ),
 				'quantity' => $this->sanitizeIngredientTextValue( $row['quantity'] ?? '' ),
 				'unit'     => $unit,
 				'item'     => $item,
@@ -1259,6 +1370,7 @@ class ReceptenAdminPage {
 		}
 
 		return [
+			'category' => $this->sanitizeIngredientCategoryValue( $row['category'] ?? '' ),
 			'quantity' => $this->sanitizeIngredientTextValue( $row['quantity'] ?? '' ),
 			'unit'     => $unit,
 			'item'     => $this->sanitizeIngredientTextValue( $row['item'] ?? '' ),
@@ -1317,6 +1429,16 @@ class ReceptenAdminPage {
 		return sanitize_key( (string) $value );
 	}
 
+	private function sanitizeIngredientCategoryValue( $value ): string {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		$value = sanitize_text_field( (string) $value );
+
+		return function_exists( 'mb_substr' ) ? mb_substr( $value, 0, 100 ) : substr( $value, 0, 100 );
+	}
+
 	private function sanitizeInstructionTextValue( $value ): string {
 		if ( ! is_scalar( $value ) ) {
 			return '';
@@ -1327,6 +1449,7 @@ class ReceptenAdminPage {
 
 	private function getEmptyIngredient(): array {
 		return [
+			'category' => '',
 			'quantity' => '',
 			'unit'     => '',
 			'item'     => '',

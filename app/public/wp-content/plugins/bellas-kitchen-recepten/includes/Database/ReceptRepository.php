@@ -261,10 +261,11 @@ class ReceptRepository {
 	private function getIngredients( int $recept_id ): array {
 		global $wpdb;
 
-		$table_name = Installer::getIngredientsTableName();
-		$results    = $wpdb->get_results(
+		$table_name      = Installer::getIngredientsTableName();
+		$category_select = Installer::hasIngredientCategoryColumn() ? 'category' : "'' AS category";
+		$results         = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT quantity, unit, item FROM {$table_name} WHERE recept_id = %d ORDER BY sort_order ASC, id ASC",
+				"SELECT {$category_select}, quantity, unit, item FROM {$table_name} WHERE recept_id = %d ORDER BY sort_order ASC, id ASC",
 				$recept_id
 			),
 			ARRAY_A
@@ -291,8 +292,9 @@ class ReceptRepository {
 	private function saveIngredients( int $recept_id, array $ingredients ): bool {
 		global $wpdb;
 
-		$table_name = Installer::getIngredientsTableName();
-		$deleted    = $wpdb->delete( $table_name, [ 'recept_id' => $recept_id ], [ '%d' ] );
+		$table_name   = Installer::getIngredientsTableName();
+		$has_category = Installer::hasIngredientCategoryColumn();
+		$deleted      = $wpdb->delete( $table_name, [ 'recept_id' => $recept_id ], [ '%d' ] );
 
 		if ( $deleted === false ) {
 			return false;
@@ -309,20 +311,24 @@ class ReceptRepository {
 				continue;
 			}
 
-			$now      = current_time( 'mysql' );
-			$inserted = $wpdb->insert(
-				$table_name,
-				[
-					'recept_id'  => $recept_id,
-					'sort_order' => $index,
-					'quantity'   => $this->sanitizeScalarText( $ingredient['quantity'] ?? '' ),
-					'unit'       => $this->sanitizeScalarKey( $ingredient['unit'] ?? '' ),
-					'item'       => $item,
-					'created_at' => $now,
-					'updated_at' => $now,
-				],
-				[ '%d', '%d', '%s', '%s', '%s', '%s', '%s' ]
-			);
+			$now         = current_time( 'mysql' );
+			$insert_data = [
+				'recept_id'  => $recept_id,
+				'sort_order' => $index,
+				'quantity'   => $this->sanitizeScalarText( $ingredient['quantity'] ?? '' ),
+				'unit'       => $this->sanitizeScalarKey( $ingredient['unit'] ?? '' ),
+				'item'       => $item,
+				'created_at' => $now,
+				'updated_at' => $now,
+			];
+			$formats     = [ '%d', '%d', '%s', '%s', '%s', '%s', '%s' ];
+
+			if ( $has_category ) {
+				$insert_data['category'] = $this->sanitizeScalarText( $ingredient['category'] ?? '' );
+				$formats[]               = '%s';
+			}
+
+			$inserted = $wpdb->insert( $table_name, $insert_data, $formats );
 
 			if ( $inserted === false ) {
 				return false;
@@ -391,6 +397,7 @@ class ReceptRepository {
 				}
 
 				$ingredients[] = [
+					'category' => $this->sanitizeScalarText( $row['category'] ?? '' ),
 					'quantity' => $this->sanitizeScalarText( $row['quantity'] ?? '' ),
 					'unit'     => $this->sanitizeScalarKey( $row['unit'] ?? '' ),
 					'item'     => $item,
@@ -410,6 +417,7 @@ class ReceptRepository {
 			}
 
 			$ingredients[] = [
+				'category' => '',
 				'quantity' => '',
 				'unit'     => '',
 				'item'     => $item,

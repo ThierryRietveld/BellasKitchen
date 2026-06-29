@@ -90,12 +90,13 @@
 
 .bkr-ingredient-row {
 	display: grid;
-	grid-template-columns: 90px 150px minmax(180px, 1fr) auto;
+	grid-template-columns: 130px 90px 150px minmax(180px, 1fr) auto;
 	gap: 8px;
 	align-items: center;
-	max-width: 820px;
+	max-width: 980px;
 }
 
+.bkr-ingredient-row .bkr-ingredient-category,
 .bkr-ingredient-row .bkr-ingredient-quantity,
 .bkr-ingredient-row .bkr-ingredient-unit,
 .bkr-ingredient-row .bkr-ingredient-item {

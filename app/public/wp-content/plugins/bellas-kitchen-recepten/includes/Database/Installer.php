@@ -57,6 +57,7 @@ class Installer {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			recept_id bigint(20) unsigned NOT NULL,
 			sort_order int(10) unsigned NOT NULL DEFAULT 0,
+			category varchar(100) NOT NULL DEFAULT '',
 			quantity varchar(50) NOT NULL DEFAULT '',
 			unit varchar(50) NOT NULL DEFAULT '',
 			item varchar(255) NOT NULL,
@@ -114,6 +115,10 @@ class Installer {
 
 	public static function hasLegacyInstructionsColumn(): bool {
 		return self::columnExists( self::getTableName(), 'instructies' );
+	}
+
+	public static function hasIngredientCategoryColumn(): bool {
+		return self::columnExists( self::getIngredientsTableName(), 'category' );
 	}
 
 	private static function migrateLegacyJsonFields(): void {
@@ -250,20 +255,27 @@ class Installer {
 		$ingredients = self::parseLegacyIngredients( $raw_ingredients );
 
 		foreach ( $ingredients as $index => $ingredient ) {
-			$now = current_time( 'mysql' );
+			$now         = current_time( 'mysql' );
+			$insert_data = [
+				'recept_id'  => $recept_id,
+				'sort_order' => $index,
+				'quantity'   => $ingredient['quantity'],
+				'unit'       => $ingredient['unit'],
+				'item'       => $ingredient['item'],
+				'created_at' => $now,
+				'updated_at' => $now,
+			];
+			$formats     = [ '%d', '%d', '%s', '%s', '%s', '%s', '%s' ];
+
+			if ( self::hasIngredientCategoryColumn() ) {
+				$insert_data['category'] = $ingredient['category'] ?? '';
+				$formats[]               = '%s';
+			}
 
 			$wpdb->insert(
 				$ingredients_table,
-				[
-					'recept_id'   => $recept_id,
-					'sort_order'  => $index,
-					'quantity'    => $ingredient['quantity'],
-					'unit'        => $ingredient['unit'],
-					'item'        => $ingredient['item'],
-					'created_at'  => $now,
-					'updated_at'  => $now,
-				],
-				[ '%d', '%d', '%s', '%s', '%s', '%s', '%s' ]
+				$insert_data,
+				$formats
 			);
 		}
 	}
@@ -316,6 +328,7 @@ class Installer {
 				}
 
 				$ingredients[] = [
+					'category' => self::sanitizeScalarText( $row['category'] ?? '' ),
 					'quantity' => self::sanitizeScalarText( $row['quantity'] ?? '' ),
 					'unit'     => self::sanitizeScalarKey( $row['unit'] ?? '' ),
 					'item'     => $item,
@@ -335,6 +348,7 @@ class Installer {
 			}
 
 			$ingredients[] = [
+				'category' => '',
 				'quantity' => '',
 				'unit'     => '',
 				'item'     => $item,

@@ -45,6 +45,28 @@ $ingredients  = is_array( $recipe['ingredienten'] ?? null ) ? $recipe['ingredien
 $instructions = is_array( $recipe['instructies'] ?? null ) ? $recipe['instructies'] : array();
 $main_url     = bellas_kitchen_get_recept_image_url( $recipe, 'large' );
 $main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
+
+$ingredient_groups       = array();
+$ingredient_group_lookup = array();
+
+foreach ( $ingredients as $ingredient ) {
+	if ( ! is_array( $ingredient ) ) {
+		continue;
+	}
+
+	$category  = trim( (string) ( $ingredient['category'] ?? '' ) );
+	$group_key = '' === $category ? '__uncategorized' : md5( $category );
+
+	if ( ! isset( $ingredient_group_lookup[ $group_key ] ) ) {
+		$ingredient_group_lookup[ $group_key ] = count( $ingredient_groups );
+		$ingredient_groups[]                   = array(
+			'category'    => $category,
+			'ingredients' => array(),
+		);
+	}
+
+	$ingredient_groups[ $ingredient_group_lookup[ $group_key ] ]['ingredients'][] = $ingredient;
+}
 ?>
 
 	<article id="recept-<?php echo esc_attr( $recipe['id'] ); ?>">
@@ -132,7 +154,7 @@ $main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
 				<!-- Main Content Grid -->
 				<div class="mt-12 grid gap-8 lg:grid-cols-3">
 					<!-- Ingredients -->
-					<?php if ( is_array( $ingredients ) && ! empty( $ingredients ) ) : ?>
+					<?php if ( ! empty( $ingredient_groups ) ) : ?>
 						<section class="lg:col-span-1">
 							<div class="flex flex-col gap-2">
 								<h2 class="font-display text-2xl font-semibold text-stone-900 dark:text-night-text">Ingrediënten</h2>
@@ -140,32 +162,41 @@ $main_alt     = bellas_kitchen_get_recept_image_alt( $recipe );
 									<p class="text-sm text-stone-600 dark:text-night-muted">Voor <span class="font-semibold text-stone-900 dark:text-night-text" data-servings-summary><?php echo esc_html( bellas_kitchen_format_recept_servings( $servings ) ); ?></span></p>
 								<?php endif; ?>
 							</div>
-							<div class="mt-4 space-y-3 rounded-2xl border border-rose-100 bg-white/80 p-6 dark:border-night-border dark:bg-night-surface/90">
-								<ul class="space-y-3">
-									<?php foreach ( $ingredients as $ingredient ) : ?>
-										<?php
-										$quantity = trim( (string) ( $ingredient['quantity'] ?? '' ) );
-										$unit_key = (string) ( $ingredient['unit'] ?? '' );
-										$unit     = bellas_kitchen_format_recept_unit( $unit_key );
-										$amount   = trim( implode( ' ', array_filter( array( $quantity, $unit ) ) ) );
-										?>
-										<li class="flex items-start gap-3 text-stone-700 dark:text-night-muted" data-ingredient data-base-quantity="<?php echo esc_attr( $quantity ); ?>" data-base-unit-key="<?php echo esc_attr( $unit_key ); ?>" data-base-unit="<?php echo esc_attr( $unit ); ?>" data-base-amount="<?php echo esc_attr( $amount ); ?>">
-											<span class="mt-1 inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-rose-400"></span>
-											<div>
-												<?php if ( '' !== $amount ) : ?>
-													<span class="font-semibold" data-ingredient-amount>
-														<?php echo esc_html( $amount ); ?>
-													</span>
-												<?php else : ?>
-													<span class="hidden font-semibold" data-ingredient-amount></span>
-												<?php endif; ?>
-												<span class="text-stone-600 dark:text-night-muted">
-													<?php echo esc_html( (string) ( $ingredient['item'] ?? '' ) ); ?>
-												</span>
-											</div>
-										</li>
-									<?php endforeach; ?>
-								</ul>
+							<div class="mt-4 space-y-6 rounded-2xl border border-rose-100 bg-white/80 p-6 dark:border-night-border dark:bg-night-surface/90">
+								<?php foreach ( $ingredient_groups as $ingredient_group ) : ?>
+									<div class="space-y-3">
+										<?php if ( '' !== $ingredient_group['category'] ) : ?>
+											<h3 class="text-sm font-semibold uppercase tracking-[0.16em] text-rose-500">
+												<?php echo esc_html( $ingredient_group['category'] ); ?>
+											</h3>
+										<?php endif; ?>
+										<ul class="space-y-3">
+											<?php foreach ( $ingredient_group['ingredients'] as $ingredient ) : ?>
+												<?php
+												$quantity = trim( (string) ( $ingredient['quantity'] ?? '' ) );
+												$unit_key = (string) ( $ingredient['unit'] ?? '' );
+												$unit     = bellas_kitchen_format_recept_unit( $unit_key );
+												$amount   = trim( implode( ' ', array_filter( array( $quantity, $unit ) ) ) );
+												?>
+												<li class="flex items-start gap-3 text-stone-700 dark:text-night-muted" data-ingredient data-base-quantity="<?php echo esc_attr( $quantity ); ?>" data-base-unit-key="<?php echo esc_attr( $unit_key ); ?>" data-base-unit="<?php echo esc_attr( $unit ); ?>" data-base-amount="<?php echo esc_attr( $amount ); ?>">
+													<span class="mt-1 inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-rose-400"></span>
+													<div>
+														<?php if ( '' !== $amount ) : ?>
+															<span class="font-semibold" data-ingredient-amount>
+																<?php echo esc_html( $amount ); ?>
+															</span>
+														<?php else : ?>
+															<span class="hidden font-semibold" data-ingredient-amount></span>
+														<?php endif; ?>
+														<span class="text-stone-600 dark:text-night-muted">
+															<?php echo esc_html( (string) ( $ingredient['item'] ?? '' ) ); ?>
+														</span>
+													</div>
+												</li>
+											<?php endforeach; ?>
+										</ul>
+									</div>
+								<?php endforeach; ?>
 							</div>
 						</section>
 					<?php endif; ?>

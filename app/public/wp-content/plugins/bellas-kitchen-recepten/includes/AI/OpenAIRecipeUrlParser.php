@@ -140,6 +140,7 @@ Do NOT invent, simplify, or approximate anything.
 Only use information explicitly present on the page.
 If something is missing on the page, leave it empty or omit it (do not guess).
 Keep ingredient quantities, units, and names as written, but normalize units to the allowed list where possible.
+If ingredients are grouped under headings like sauce, topping, dough, vulling, or garnering, keep that heading as the ingredient category.
 Keep the number of steps and their meaning exactly the same (you may split or merge slightly only if needed for clarity, but do not change content).
 Do not add extra explanations outside the template.
 
@@ -152,7 +153,7 @@ Template:
 [Bereidingstijd][/Bereidingstijd]
 [Moeilijkheid][/Moeilijkheid]
 [SoortGerecht][/SoortGerecht]
-[Ingredienten] hoeveelheid | eenheid | ingrediënt [/Ingredienten]
+[Ingredienten] categorie | hoeveelheid | eenheid | ingrediënt [/Ingredienten]
 [Stappen] stap [/Stappen]
 
 Example template:
@@ -163,13 +164,13 @@ Example template:
 [Moeilijkheid]makkelijk[/Moeilijkheid]
 [SoortGerecht]diner[/SoortGerecht]
 [Ingredienten] 
-2 | el | olijfolie 
-1 | | ui
-2 | stuks | knoflooktenen
-250 | g | pasta
-200 | ml | kookroom
-150 | g | spinazie naar smaak 
-| | peper en zout
+Basis | 2 | el | olijfolie
+Basis | 1 | | ui
+Basis | 2 | stuks | knoflooktenen
+Basis | 250 | g | pasta
+Saus | 200 | ml | kookroom
+Saus | 150 | g | spinazie naar smaak
+Saus | | | peper en zout
 [/Ingredienten]
 [Stappen]
 Fruit de ui en knoflook in de olie.
@@ -180,7 +181,8 @@ Meng alles met de pasta en breng op smaak.
 
 Additional rules:
 Convert ranges like "1-2 tl" into a single line (keep original format if unclear).
-If “naar smaak” is mentioned, use: naar_smaak | | ingrediënt
+If “naar smaak” is mentioned, use: categorie | | naar_smaak | ingrediënt (leave categorie empty if none is given).
+If no ingredient category is given, leave the category field empty.
 If no unit is given, leave the unit field empty.
 Keep ordering exactly the same as on the page.
 Strip unnecessary text like tips, ads, or story content.
